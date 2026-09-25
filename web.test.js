@@ -10436,7 +10436,8 @@ var $;
             $mol_assert_like(Object.keys($bog_vmap_app_doc_node.schema), ['Tree', 'Js', 'Css']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_snap.schema), ['Time', 'Author', 'Tree', 'Js', 'Css', 'Places']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_spot.schema), ['X', 'Y']);
-            $mol_assert_like(Object.keys($bog_vmap_app_doc.schema), ['Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps']);
+            $mol_assert_like(Object.keys($bog_vmap_app_doc_guide.schema), ['Axis', 'At']);
+            $mol_assert_like(Object.keys($bog_vmap_app_doc.schema), ['Title', 'Nodes', 'Root', 'Spots', 'Pack', 'Snaps', 'Guides']);
             $mol_assert_like(Object.keys($bog_vmap_app_doc_home.schema), ['Docs']);
         },
         'schema carries no static wire methods'($) {
@@ -12520,62 +12521,6 @@ var $;
             const style = stage.menu.dom_node().style;
             $mol_assert_equal(style.left, '120px');
             $mol_assert_equal(style.top, '48px');
-        },
-    });
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($_1) {
-    const box = (x, y, width, height) => ({ x, y, width, height });
-    $mol_test({
-        'an edge within the slack pulls the box onto the edge of its neighbour'($) {
-            const snap = $bog_vmap_app_pane_snap(box(103, 300, 100, 50), [box(100, 0, 200, 100)], 6);
-            $mol_assert_equal(snap.dx, -3);
-            $mol_assert_equal(snap.dy, 0);
-            $mol_assert_like(snap.lines, [
-                { axis: 'x', at: 100, from: 0, to: 350 },
-                { axis: 'x', at: 200, from: 0, to: 350 },
-            ]);
-        },
-        'the nearest pair wins on each axis, and the axes snap apart'($) {
-            const snap = $bog_vmap_app_pane_snap(box(52, 205, 40, 40), [box(0, 0, 50, 50), box(200, 200, 60, 60)], 6);
-            $mol_assert_equal(snap.dx, -2);
-            $mol_assert_equal(snap.dy, -5);
-            $mol_assert_like(snap.lines, [
-                { axis: 'x', at: 50, from: 0, to: 240 },
-                { axis: 'y', at: 200, from: 50, to: 260 },
-            ]);
-        },
-        'a centre meets a centre'($) {
-            const snap = $bog_vmap_app_pane_snap(box(3, 0, 100, 40), [box(20, 100, 60, 60)], 6);
-            $mol_assert_equal(snap.dx, -3);
-            $mol_assert_equal(snap.dy, 0);
-            $mol_assert_like(snap.lines, [{ axis: 'x', at: 50, from: 0, to: 160 }]);
-        },
-        'beyond the slack nothing moves and no line is drawn, at the slack it snaps'($) {
-            const far = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 6);
-            $mol_assert_equal(far.dx, 0);
-            $mol_assert_equal(far.dy, 0);
-            $mol_assert_like(far.lines, []);
-            const edge = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 10);
-            $mol_assert_equal(edge.dx, -10);
-            $mol_assert_equal(edge.lines.length, 2);
-        },
-        'lines on one coordinate merge into one from end to end'($) {
-            const snap = $bog_vmap_app_pane_snap(box(100, 150, 50, 50), [box(100, 0, 50, 50), box(100, 300, 50, 50)], 6);
-            $mol_assert_equal(snap.dx, 0);
-            $mol_assert_equal(snap.dy, 0);
-            $mol_assert_like(snap.lines, [
-                { axis: 'x', at: 100, from: 0, to: 350 },
-                { axis: 'x', at: 125, from: 0, to: 350 },
-                { axis: 'x', at: 150, from: 0, to: 350 },
-            ]);
-        },
-        'with no neighbours the box stays where the pointer put it'($) {
-            const snap = $bog_vmap_app_pane_snap(box(7, 9, 10, 10), [], 6);
-            $mol_assert_like(snap, { dx: 0, dy: 0, lines: [] });
         },
     });
 })($ || ($ = {}));
@@ -16129,6 +16074,79 @@ var $;
             stage.drop(calc, stage.client([500, 400]));
             $mol_assert_like(stage.app.spots()['Calc_2'], { x: 404, y: 324 });
         },
+        'a guide pulled off the ruler reaches the document only on release'($) {
+            const pane = pane_make($, { A: box(0, 0) });
+            pane.ruler_press('x', pointer(300, 40));
+            const id = pane.guide_ids()[0];
+            $mol_assert_equal(pane.guide_ids().length, 1);
+            $mol_assert_like(pane.guide_at(id), { axis: 'x', at: 300 });
+            $mol_assert_like(pane.guides(), {});
+            pane.guide_move(id, pointer(420, 200));
+            $mol_assert_like(pane.guide_at(id), { axis: 'x', at: 420 });
+            $mol_assert_like(pane.guides(), {});
+            pane.guide_release(id, pointer(420, 200, { buttons: 0 }));
+            $mol_assert_like(pane.guides(), { [id]: { axis: 'x', at: 420 } });
+            $mol_assert_equal(pane.guide_drag(), null);
+        },
+        'a guide moves, and a drag back onto the ruler takes it away'($) {
+            const pane = pane_make($, { A: box(0, 0) }, {
+                pane_rect: () => ({ left: 20, top: 20, width: 1000, height: 800 }),
+            });
+            pane.guides({ one: { axis: 'x', at: 300 } });
+            const press = (x) => pointer(x, 120, { stopPropagation() { } });
+            pane.guide_press('one', press(320));
+            pane.guide_move('one', pointer(380, 120));
+            $mol_assert_like(pane.guide_at('one'), { axis: 'x', at: 360 });
+            pane.guide_release('one', pointer(380, 120, { buttons: 0 }));
+            $mol_assert_like(pane.guides(), { one: { axis: 'x', at: 360 } });
+            pane.guide_press('one', press(380));
+            pane.guide_move('one', pointer(10, 120));
+            $mol_assert_equal(pane.guide_drag()?.off, true);
+            pane.guide_release('one', pointer(10, 120, { buttons: 0 }));
+            $mol_assert_like(pane.guides(), {});
+        },
+        'Delete takes away the picked guide and leaves the nodes alone'($) {
+            const pane = pane_make($, { A: box(0, 0) });
+            pane.guides({ one: { axis: 'y', at: 200 } });
+            pane.picked(['A']);
+            let dropped = 0;
+            pane.node_delete = () => { ++dropped; return null; };
+            pane.guide_press('one', pointer(400, 200, { stopPropagation() { } }));
+            pane.guide_release('one', pointer(400, 200, { buttons: 0 }));
+            $mol_assert_equal(pane.guide_picked('one'), true);
+            const stroke = { key: 'Delete', prevented: false, preventDefault() { this.prevented = true; } };
+            $mol_assert_equal(pane.key_down(stroke), true);
+            $mol_assert_like(pane.guides(), {});
+            $mol_assert_equal(dropped, 0);
+            $mol_assert_equal(pane.key_down(stroke), true);
+            $mol_assert_equal(dropped, 1);
+        },
+        'a node snaps to a guide on the axis of the guide, and only on it'($) {
+            const upright = pane_make($, { A: box(0, 0) });
+            upright.guides({ one: { axis: 'x', at: 300 } });
+            upright.node_press(pointer(50, 25));
+            upright.node_move(pointer(347, 129));
+            $mol_assert_like(upright.spots()['A'], { x: 300, y: 104 });
+            const flat = pane_make($, { A: box(0, 0) });
+            flat.guides({ one: { axis: 'y', at: 100 } });
+            flat.node_press(pointer(50, 25));
+            flat.node_move(pointer(347, 129));
+            $mol_assert_like(flat.spots()['A'], { x: 297, y: 100 });
+        },
+        'a guide dragged near a node edge sticks to it'($) {
+            const pane = pane_make($, { A: box(0, 0), B: box(300, 200) });
+            pane.ruler_press('x', pointer(297, 40));
+            const id = pane.guide_ids()[0];
+            $mol_assert_like(pane.guide_at(id), { axis: 'x', at: 300 });
+            pane.guide_move(id, pointer(500, 200));
+            $mol_assert_like(pane.guide_at(id), { axis: 'x', at: 500 });
+        },
+        'a document that cannot be changed gets no guides'($) {
+            const pane = pane_make($, { A: box(0, 0) }, { editable: () => false });
+            pane.ruler_press('x', pointer(300, 40));
+            $mol_assert_equal(pane.guide_drag(), null);
+            $mol_assert_like(pane.guides(), {});
+        },
     });
 })($ || ($ = {}));
 (function ($_7) {
@@ -18814,13 +18832,80 @@ var $;
     };
     $_1.$bog_vmap_app_flow_size = { width: 100, height: 50 };
     $_1.$bog_vmap_app_flow_board = { width: 400, height: 300 };
+    const flow_born = new Set();
+    const flow_gone = new WeakSet();
+    function flow_watch(klass) {
+        const make = klass.make;
+        klass.make = function (config) {
+            const obj = make.call(this, config);
+            flow_born.add(obj);
+            return obj;
+        };
+    }
+    function flow_walk(obj, seen) {
+        if (seen.has(obj) || flow_gone.has(obj))
+            return 0;
+        seen.add(obj);
+        flow_gone.add(obj);
+        let killed = 0;
+        const take = (atom) => {
+            if (!(atom instanceof $mol_wire_atom))
+                return;
+            const cache = atom.cache;
+            if (cache && typeof cache === 'object' && $mol_owning_check(atom, cache)) {
+                killed += flow_walk(cache, seen);
+            }
+            try {
+                atom.destructor();
+            }
+            catch (error) {
+                $mol_fail_log(error);
+            }
+            ++killed;
+        };
+        for (const key of Reflect.ownKeys(obj)) {
+            const val = obj[key];
+            if (val instanceof Map) {
+                for (const one of val.values())
+                    take(one);
+                continue;
+            }
+            take(val);
+        }
+        try {
+            obj.destructor?.();
+        }
+        catch (error) {
+            $mol_fail_log(error);
+        }
+        return killed;
+    }
+    function $bog_vmap_app_flow_sweep(obj) {
+        if (!obj)
+            return 0;
+        if (!Reflect.ownKeys(obj).length)
+            $mol_fail(new Error(`Нечего разбирать: у ${obj.constructor?.name ?? obj} нет своих ключей,`
+                + ' глубокий разбор позвали не на том объекте'));
+        return flow_walk(obj, new Set());
+    }
+    $_1.$bog_vmap_app_flow_sweep = $bog_vmap_app_flow_sweep;
     $_1.$bog_vmap_app_flow_swept = (() => {
         const done = $mol_test_complete;
+        flow_watch($bog_vmap_app);
         $.$mol_test_complete = () => {
-            $bog_vmap_app_flow_last?.destructor();
+            $bog_vmap_app_flow_sweep($bog_vmap_app_flow_last);
             $bog_vmap_app_flow_last = null;
             $bog_vmap_app_flow_host?.remove();
             $bog_vmap_app_flow_host = null;
+            for (const one of flow_born) {
+                try {
+                    $bog_vmap_app_flow_sweep(one);
+                }
+                catch (error) {
+                    $mol_fail_log(error);
+                }
+            }
+            flow_born.clear();
             return done();
         };
         return true;
@@ -18856,7 +18941,7 @@ var $;
     function $bog_vmap_app_flow_stage($, over = {}) {
         browser_gaps($);
         const dom = $.$mol_dom_context;
-        $bog_vmap_app_flow_last?.destructor();
+        $bog_vmap_app_flow_sweep($bog_vmap_app_flow_last);
         $bog_vmap_app_flow_host?.remove();
         const host = dom.document.createElement('div');
         host.setAttribute('bog_vmap_app_flow_host', '');
@@ -23970,6 +24055,62 @@ var $;
 ;
 "use strict";
 var $;
+(function ($_1) {
+    const box = (x, y, width, height) => ({ x, y, width, height });
+    $mol_test({
+        'an edge within the slack pulls the box onto the edge of its neighbour'($) {
+            const snap = $bog_vmap_app_pane_snap(box(103, 300, 100, 50), [box(100, 0, 200, 100)], 6);
+            $mol_assert_equal(snap.dx, -3);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 100, from: 0, to: 350 },
+                { axis: 'x', at: 200, from: 0, to: 350 },
+            ]);
+        },
+        'the nearest pair wins on each axis, and the axes snap apart'($) {
+            const snap = $bog_vmap_app_pane_snap(box(52, 205, 40, 40), [box(0, 0, 50, 50), box(200, 200, 60, 60)], 6);
+            $mol_assert_equal(snap.dx, -2);
+            $mol_assert_equal(snap.dy, -5);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 50, from: 0, to: 240 },
+                { axis: 'y', at: 200, from: 50, to: 260 },
+            ]);
+        },
+        'a centre meets a centre'($) {
+            const snap = $bog_vmap_app_pane_snap(box(3, 0, 100, 40), [box(20, 100, 60, 60)], 6);
+            $mol_assert_equal(snap.dx, -3);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [{ axis: 'x', at: 50, from: 0, to: 160 }]);
+        },
+        'beyond the slack nothing moves and no line is drawn, at the slack it snaps'($) {
+            const far = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 6);
+            $mol_assert_equal(far.dx, 0);
+            $mol_assert_equal(far.dy, 0);
+            $mol_assert_like(far.lines, []);
+            const edge = $bog_vmap_app_pane_snap(box(110, 300, 100, 50), [box(100, 0, 200, 100)], 10);
+            $mol_assert_equal(edge.dx, -10);
+            $mol_assert_equal(edge.lines.length, 2);
+        },
+        'lines on one coordinate merge into one from end to end'($) {
+            const snap = $bog_vmap_app_pane_snap(box(100, 150, 50, 50), [box(100, 0, 50, 50), box(100, 300, 50, 50)], 6);
+            $mol_assert_equal(snap.dx, 0);
+            $mol_assert_equal(snap.dy, 0);
+            $mol_assert_like(snap.lines, [
+                { axis: 'x', at: 100, from: 0, to: 350 },
+                { axis: 'x', at: 125, from: 0, to: 350 },
+                { axis: 'x', at: 150, from: 0, to: 350 },
+            ]);
+        },
+        'with no neighbours the box stays where the pointer put it'($) {
+            const snap = $bog_vmap_app_pane_snap(box(7, 9, 10, 10), [], 6);
+            $mol_assert_like(snap, { dx: 0, dy: 0, lines: [] });
+        },
+    });
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
 (function ($) {
     const box = (x, y, width, height) => ({ x, y, width, height });
     const sized = (gaps) => gaps.map(gap => gap.axis + ':' + gap.size);
@@ -24498,6 +24639,18 @@ var $;
                 }
                 $mol_assert_equal(app.status(), 'Документ загружается…');
             }
+        },
+        'a document still loading gives no guides and does not hold the canvas'($) {
+            const waiting = new Promise(() => { });
+            const app = $bog_vmap_app.make({
+                $,
+                store: () => $bog_vmap_app_store.make({
+                    $,
+                    doc_land_config: () => null,
+                    guides: () => { throw waiting; },
+                }),
+            });
+            $mol_assert_like(app.guides(), {});
         },
         'a ready or a foreign document leaves the editor open'($) {
             for (const [stage, note] of [

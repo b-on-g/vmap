@@ -33628,6 +33628,18 @@ var $;
         }
     }
     $.$bog_vmap_app_doc_spot = $bog_vmap_app_doc_spot;
+    class $bog_vmap_app_doc_guide extends $giper_baza_dict.with({
+        Axis: $giper_baza_atom_text,
+        At: $giper_baza_atom_real,
+    }) {
+        axis(next) {
+            return this.Axis(next)?.val(next) ?? '';
+        }
+        at(next) {
+            return this.At(next)?.val(next) ?? 0;
+        }
+    }
+    $.$bog_vmap_app_doc_guide = $bog_vmap_app_doc_guide;
     class $bog_vmap_app_doc extends $giper_baza_dict.with({
         Title: $giper_baza_atom_text,
         Nodes: $giper_baza_list_link.to(() => $bog_vmap_app_doc_node),
@@ -33635,6 +33647,7 @@ var $;
         Spots: $giper_baza_dict_to($bog_vmap_app_doc_spot),
         Pack: $giper_baza_atom_text,
         Snaps: $giper_baza_list_link.to(() => $bog_vmap_app_doc_snap),
+        Guides: $giper_baza_dict_to($bog_vmap_app_doc_guide),
     }) {
         pack(next) {
             return this.Pack(next)?.val(next) ?? '';
@@ -33654,6 +33667,7 @@ var $;
         $bog_vmap_app_doc_node,
         $bog_vmap_app_doc_snap,
         $bog_vmap_app_doc_spot,
+        $bog_vmap_app_doc_guide,
         $bog_vmap_app_doc_home,
     ];
 })($ || ($ = {}));
@@ -34442,6 +34456,9 @@ var $;
         draft_spots(next) {
             return next ?? {};
         }
+        draft_guides(next) {
+            return next ?? {};
+        }
         draft_pack(next) {
             return next ?? '';
         }
@@ -34532,6 +34549,46 @@ var $;
                     dict.has(key, false);
             }
             return next;
+        }
+        doc_guides(doc, next) {
+            if (next === undefined) {
+                const dict = doc.Guides();
+                const res = {};
+                const keys = (dict?.keys() ?? [])
+                    .filter((key) => typeof key === 'string')
+                    .sort();
+                for (const key of keys) {
+                    const line = dict.key(key);
+                    if (!line)
+                        continue;
+                    const axis = line.axis();
+                    if (axis !== 'x' && axis !== 'y')
+                        continue;
+                    res[key] = { axis, at: line.at() };
+                }
+                return res;
+            }
+            const dict = doc.Guides(null);
+            for (const id of Object.keys(next)) {
+                const line = dict.key(id, null);
+                line.axis(next[id].axis);
+                line.at(next[id].at);
+            }
+            for (const key of dict.keys()) {
+                if (typeof key !== 'string')
+                    continue;
+                if (!(key in next))
+                    dict.has(key, false);
+            }
+            return next;
+        }
+        guides(next) {
+            const doc = this.doc_current();
+            if (!doc)
+                return this.draft_guides(next);
+            if (next !== undefined && !doc.can_change())
+                return this.doc_guides(doc);
+            return this.doc_guides(doc, next);
         }
         source(next) {
             const doc = this.doc_current();
@@ -34661,6 +34718,9 @@ var $;
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_spots", null);
+    __decorate([
+        $mol_mem
+    ], $bog_vmap_app_store.prototype, "draft_guides", null);
     __decorate([
         $mol_mem
     ], $bog_vmap_app_store.prototype, "draft_pack", null);
@@ -40424,6 +40484,7 @@ var $;
 			(obj.doc_src) = () => ((this.doc_src()));
 			(obj.doc_css) = () => ((this.doc_css()));
 			(obj.spots) = (next) => ((this.spots(next)));
+			(obj.guides) = (next) => ((this.guides(next)));
 			(obj.picked) = (next) => ((this.picked(next)));
 			(obj.inner) = () => ((this.inner()));
 			(obj.entered) = (next) => ((this.entered(next)));
@@ -40635,6 +40696,10 @@ var $;
 			return "";
 		}
 		spots(next){
+			if(next !== undefined) return next;
+			return {};
+		}
+		guides(next){
 			if(next !== undefined) return next;
 			return {};
 		}
@@ -41047,6 +41112,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "scene_restart"));
 	($mol_mem(($.$bog_vmap_app.prototype), "chrome_click"));
 	($mol_mem(($.$bog_vmap_app.prototype), "spots"));
+	($mol_mem(($.$bog_vmap_app.prototype), "guides"));
 	($mol_mem(($.$bog_vmap_app.prototype), "selected"));
 	($mol_mem(($.$bog_vmap_app.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app.prototype), "inner"));
@@ -42224,6 +42290,18 @@ var $;
             }
             spots(next) {
                 return this.store().spots(next);
+            }
+            guides(next) {
+                if (next !== undefined)
+                    return this.store().guides(next);
+                try {
+                    return this.store().guides();
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return {};
+                    return $mol_fail_hidden(error);
+                }
             }
             links(next) {
                 const store = this.store();
@@ -44821,6 +44899,27 @@ var $;
 		snap_hint_style(id){
 			return {};
 		}
+		guide_style(id){
+			return {};
+		}
+		guide_picked(id){
+			return false;
+		}
+		guide_axis(id){
+			return "";
+		}
+		guide_press(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		guide_move(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		guide_release(id, next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		gap_style(id){
 			return {};
 		}
@@ -44832,6 +44931,10 @@ var $;
 		}
 		ruler_sub(id){
 			return [];
+		}
+		ruler_press(id, next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		tick_style(id){
 			return {};
@@ -44999,6 +45102,10 @@ var $;
 			return "";
 		}
 		spots(next){
+			if(next !== undefined) return next;
+			return {};
+		}
+		guides(next){
 			if(next !== undefined) return next;
 			return {};
 		}
@@ -45329,6 +45436,23 @@ var $;
 			(obj.style) = () => ((this.snap_hint_style(id)));
 			return obj;
 		}
+		Guide(id){
+			const obj = new this.$.$mol_view();
+			(obj.style) = () => ((this.guide_style(id)));
+			(obj.attr) = () => ({
+				...(this.$.$mol_view.prototype.attr.call(obj)), 
+				"bog_vmap_app_pane_guide_picked": (this.guide_picked(id)), 
+				"bog_vmap_app_pane_guide_axis": (this.guide_axis(id)), 
+				"title": "Направляющая: тяните мышью, обратно на линейку или Delete — убрать"
+			});
+			(obj.event) = () => ({
+				...(this.$.$mol_view.prototype.event.call(obj)), 
+				"pointerdown": (next) => (this.guide_press(id, next)), 
+				"pointermove": (next) => (this.guide_move(id, next)), 
+				"pointerup": (next) => (this.guide_release(id, next))
+			});
+			return obj;
+		}
 		Gap(id){
 			const obj = new this.$.$mol_view();
 			(obj.style) = () => ((this.gap_style(id)));
@@ -45339,6 +45463,13 @@ var $;
 			const obj = new this.$.$mol_view();
 			(obj.style) = () => ((this.ruler_style(id)));
 			(obj.sub) = () => ((this.ruler_sub(id)));
+			(obj.attr) = () => ({...(this.$.$mol_view.prototype.attr.call(obj)), "title": "Линейка: тяните с неё направляющую"});
+			(obj.event) = () => ({
+				...(this.$.$mol_view.prototype.event.call(obj)), 
+				"pointerdown": (next) => (this.ruler_press(id, next)), 
+				"pointermove": (next) => (this.guide_move(id, next)), 
+				"pointerup": (next) => (this.guide_release(id, next))
+			});
 			return obj;
 		}
 		Tick(id){
@@ -45399,6 +45530,10 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "text_draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "text_submit"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "text_key"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "guide_press"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "guide_move"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "guide_release"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "ruler_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_showed"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
@@ -45422,6 +45557,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_clone"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "leave"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "spots"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "guides"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "picked"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_add"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "link_drop"));
@@ -45466,6 +45602,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Band"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "Draft"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Snap_hint"));
+	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Guide"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Gap"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ruler"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Tick"));
@@ -45678,64 +45815,6 @@ var $;
         };
     }
     $.$bog_vmap_app_pane_screen = $bog_vmap_app_pane_screen;
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $bog_vmap_app_pane_snap_stops(box, axis) {
-        const start = axis === 'x' ? box.x : box.y;
-        const size = axis === 'x' ? box.width : box.height;
-        return [start, start + size / 2, start + size];
-    }
-    $.$bog_vmap_app_pane_snap_stops = $bog_vmap_app_pane_snap_stops;
-    function $bog_vmap_app_pane_snap_gap(mine, theirs, slack) {
-        let best = null;
-        for (const from of mine)
-            for (const to of theirs) {
-                const gap = to - from;
-                if (Math.abs(gap) > slack)
-                    continue;
-                if (best !== null && Math.abs(gap) >= Math.abs(best))
-                    continue;
-                best = gap;
-            }
-        return best ?? 0;
-    }
-    $.$bog_vmap_app_pane_snap_gap = $bog_vmap_app_pane_snap_gap;
-    function $bog_vmap_app_pane_snap(moving, others, slack) {
-        const stops = $bog_vmap_app_pane_snap_stops;
-        const dx = $bog_vmap_app_pane_snap_gap(stops(moving, 'x'), others.flatMap(box => stops(box, 'x')), slack);
-        const dy = $bog_vmap_app_pane_snap_gap(stops(moving, 'y'), others.flatMap(box => stops(box, 'y')), slack);
-        const placed = { x: moving.x + dx, y: moving.y + dy, width: moving.width, height: moving.height };
-        const lines = new Map();
-        const touch = (axis, at, from, to) => {
-            const key = axis + ' ' + at;
-            const was = lines.get(key);
-            lines.set(key, {
-                axis,
-                at,
-                from: Math.min(from, was?.from ?? from),
-                to: Math.max(to, was?.to ?? to),
-            });
-        };
-        const near = (a, b) => Math.abs(a - b) < 1e-6;
-        for (const other of others) {
-            for (const axis of ['x', 'y']) {
-                const cross = axis === 'x' ? 'y' : 'x';
-                const mine = stops(placed, axis);
-                for (const at of stops(other, axis)) {
-                    if (!mine.some(stop => near(stop, at)))
-                        continue;
-                    const span = [...stops(placed, cross), ...stops(other, cross)];
-                    touch(axis, at, Math.min(...span), Math.max(...span));
-                }
-            }
-        }
-        return { dx, dy, lines: [...lines.values()] };
-    }
-    $.$bog_vmap_app_pane_snap = $bog_vmap_app_pane_snap;
 })($ || ($ = {}));
 
 ;
@@ -46063,6 +46142,7 @@ var $;
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.snap_hint_views(),
                     ...this.gap_views(),
+                    ...this.guide_views(),
                     ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
@@ -46338,7 +46418,7 @@ var $;
             snap_at(box, moving, shift) {
                 if (!box)
                     return null;
-                return this.$.$bog_vmap_app_pane_snap({ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height }, this.snap_boxes(moving), this.snap_slack() / this.camera_zoom());
+                return this.$.$bog_vmap_app_pane_snap({ x: box.x + shift[0], y: box.y + shift[1], width: box.width, height: box.height }, this.snap_boxes(moving), this.snap_slack() / this.camera_zoom(), this.guide_rails());
             }
             snap_hints(next) {
                 return next ?? [];
@@ -46490,6 +46570,141 @@ var $;
                     height: Math.max(rect.height, 1) + 'px',
                 };
             }
+            guide_lines() {
+                return this.guides();
+            }
+            guide_at(id) {
+                const drag = this.guide_drag();
+                if (drag && drag.id === id)
+                    return { axis: drag.axis, at: drag.at };
+                const line = this.guide_lines()[id];
+                if (!line)
+                    return null;
+                if (line.axis !== 'x' && line.axis !== 'y')
+                    return null;
+                return line;
+            }
+            guide_ids() {
+                const ids = Object.keys(this.guide_lines()).sort();
+                const drag = this.guide_drag();
+                if (drag && !ids.includes(drag.id))
+                    ids.push(drag.id);
+                return ids;
+            }
+            guide_rails() {
+                return this.guide_ids().flatMap(id => this.guide_at(id) ?? []);
+            }
+            guide_views() {
+                return this.guide_ids().map(id => this.Guide(id));
+            }
+            guide_picked(id) {
+                return this.guide_pick() === id;
+            }
+            guide_axis(id) {
+                return this.guide_at(id)?.axis ?? '';
+            }
+            guide_style(id) {
+                const line = this.guide_at(id);
+                if (!line)
+                    return {};
+                const zoom = this.camera_zoom();
+                const shift = this.camera_shift();
+                const at = line.at * zoom + (line.axis === 'x' ? shift[0] : shift[1]);
+                return line.axis === 'x'
+                    ? { left: at + 'px', top: '0', bottom: '0', width: '1px' }
+                    : { top: at + 'px', left: '0', right: '0', height: '1px' };
+            }
+            guide_pick(next) {
+                return next ?? null;
+            }
+            guide_drag(next) {
+                return next ?? null;
+            }
+            guide_snap(axis, at) {
+                const slack = this.snap_slack() / this.camera_zoom();
+                const stops = this.snap_boxes({}).flatMap(box => this.$.$bog_vmap_app_pane_snap_stops(box, axis));
+                return at + this.$.$bog_vmap_app_pane_snap_gap([at], stops, slack);
+            }
+            guide_point(event, axis) {
+                const point = this.world_point(event);
+                return this.guide_snap(axis, axis === 'x' ? point[0] : point[1]);
+            }
+            guide_off(event, axis) {
+                const screen = this.screen_point(event);
+                return (axis === 'x' ? screen[0] : screen[1]) < 0;
+            }
+            ruler_press(axis, next) {
+                if (!next || !this.editable())
+                    return null;
+                const side = axis;
+                if (side !== 'x' && side !== 'y')
+                    return null;
+                next.preventDefault();
+                this.grab(next);
+                const id = this.$.$mol_guid();
+                this.guide_pick(id);
+                this.guide_drag({ id, axis: side, at: this.guide_point(next, side), born: true, off: false });
+                return null;
+            }
+            guide_press(id, next) {
+                if (!next)
+                    return null;
+                next.preventDefault();
+                next.stopPropagation();
+                this.guide_pick(id);
+                if (!this.editable())
+                    return null;
+                const line = this.guide_at(id);
+                if (!line)
+                    return null;
+                this.grab(next);
+                this.guide_drag({ id, axis: line.axis, at: line.at, born: false, off: false });
+                return null;
+            }
+            guide_move(id, next) {
+                const drag = this.guide_drag();
+                if (!drag || !next)
+                    return null;
+                if (!next.buttons)
+                    return this.guide_release(id, next);
+                next.preventDefault();
+                this.guide_drag({
+                    ...drag,
+                    at: this.guide_point(next, drag.axis),
+                    off: this.guide_off(next, drag.axis),
+                });
+                return null;
+            }
+            guide_release(id, next) {
+                const drag = this.guide_drag();
+                if (!drag)
+                    return null;
+                this.guide_drag(null);
+                if (drag.off) {
+                    if (!drag.born)
+                        this.guide_drop(drag.id);
+                    else
+                        this.guide_pick(null);
+                    return null;
+                }
+                this.guides({ ...this.guide_lines(), [drag.id]: { axis: drag.axis, at: drag.at } });
+                return null;
+            }
+            guide_drop(id) {
+                const next = { ...this.guide_lines() };
+                delete next[id];
+                this.guides(next);
+                if (this.guide_pick() === id)
+                    this.guide_pick(null);
+                return null;
+            }
+            grab(event) {
+                const node = event.target;
+                try {
+                    node?.setPointerCapture?.(event.pointerId);
+                }
+                catch { }
+            }
             press(next) {
                 return next ?? null;
             }
@@ -46627,7 +46842,15 @@ var $;
                 if (stroke.key === 'Delete' || stroke.key === 'Backspace') {
                     if (command || stroke.altKey)
                         return false;
-                    if (!this.editable() || !this.picked().length)
+                    if (!this.editable())
+                        return false;
+                    const guide = this.guide_pick();
+                    if (guide && this.guide_at(guide)) {
+                        stroke.preventDefault();
+                        this.guide_drop(guide);
+                        return true;
+                    }
+                    if (!this.picked().length)
                         return false;
                     stroke.preventDefault();
                     this.leave();
@@ -47222,6 +47445,7 @@ var $;
                 if (this.hand())
                     return this.press(null);
                 this.say('');
+                this.guide_pick(null);
                 const point = this.world_point(event);
                 const editable = this.editable();
                 if (editable && (this.tool() === 'board' || this.tool() === 'text'))
@@ -48345,6 +48569,30 @@ var $;
             $mol_mem_key
         ], $bog_vmap_app_pane.prototype, "snap_hint_style", null);
         __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app_pane.prototype, "guide_style", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "guide_pick", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app_pane.prototype, "guide_drag", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "ruler_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "guide_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "guide_move", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "guide_release", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_pane.prototype, "guide_drop", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app_pane.prototype, "press", null);
         __decorate([
@@ -48658,20 +48906,47 @@ var $;
                 background: { color: $mol_theme.back },
                 color: $mol_theme.shade,
                 font: { size: '.625rem' },
-                pointerEvents: 'none',
                 transition: 'none',
                 zIndex: 2,
+                touchAction: 'none',
+            },
+            Guide: {
+                position: 'absolute',
+                background: { color: $mol_theme.special },
+                transition: 'none',
+                touchAction: 'none',
+                zIndex: 2,
+                backgroundClip: 'content-box',
+                '@': {
+                    bog_vmap_app_pane_guide_axis: {
+                        x: {
+                            cursor: 'ew-resize',
+                            margin: { left: '-2px' },
+                            padding: { left: '2px', right: '2px' },
+                        },
+                        y: {
+                            cursor: 'ns-resize',
+                            margin: { top: '-2px' },
+                            padding: { top: '2px', bottom: '2px' },
+                        },
+                    },
+                    bog_vmap_app_pane_guide_picked: {
+                        true: { background: { color: $mol_theme.focus } },
+                    },
+                },
             },
             Tick: {
                 position: 'absolute',
                 padding: [0, '.125rem'],
                 whiteSpace: 'pre',
+                pointerEvents: 'none',
                 transition: 'none',
             },
             Span: {
                 position: 'absolute',
                 background: { color: $mol_theme.focus },
                 opacity: .35,
+                pointerEvents: 'none',
                 transition: 'none',
             },
             Gap: {
@@ -48871,6 +49146,68 @@ var $;
             },
         });
     })($$ = $.$$ || ($.$$ = {}));
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $bog_vmap_app_pane_rail_stops(rails, axis) {
+        return rails.filter(rail => rail.axis === axis).map(rail => rail.at);
+    }
+    $.$bog_vmap_app_pane_rail_stops = $bog_vmap_app_pane_rail_stops;
+    function $bog_vmap_app_pane_snap_stops(box, axis) {
+        const start = axis === 'x' ? box.x : box.y;
+        const size = axis === 'x' ? box.width : box.height;
+        return [start, start + size / 2, start + size];
+    }
+    $.$bog_vmap_app_pane_snap_stops = $bog_vmap_app_pane_snap_stops;
+    function $bog_vmap_app_pane_snap_gap(mine, theirs, slack) {
+        let best = null;
+        for (const from of mine)
+            for (const to of theirs) {
+                const gap = to - from;
+                if (Math.abs(gap) > slack)
+                    continue;
+                if (best !== null && Math.abs(gap) >= Math.abs(best))
+                    continue;
+                best = gap;
+            }
+        return best ?? 0;
+    }
+    $.$bog_vmap_app_pane_snap_gap = $bog_vmap_app_pane_snap_gap;
+    function $bog_vmap_app_pane_snap(moving, others, slack, rails = []) {
+        const stops = $bog_vmap_app_pane_snap_stops;
+        const dx = $bog_vmap_app_pane_snap_gap(stops(moving, 'x'), [...others.flatMap(box => stops(box, 'x')), ...$bog_vmap_app_pane_rail_stops(rails, 'x')], slack);
+        const dy = $bog_vmap_app_pane_snap_gap(stops(moving, 'y'), [...others.flatMap(box => stops(box, 'y')), ...$bog_vmap_app_pane_rail_stops(rails, 'y')], slack);
+        const placed = { x: moving.x + dx, y: moving.y + dy, width: moving.width, height: moving.height };
+        const lines = new Map();
+        const touch = (axis, at, from, to) => {
+            const key = axis + ' ' + at;
+            const was = lines.get(key);
+            lines.set(key, {
+                axis,
+                at,
+                from: Math.min(from, was?.from ?? from),
+                to: Math.max(to, was?.to ?? to),
+            });
+        };
+        const near = (a, b) => Math.abs(a - b) < 1e-6;
+        for (const other of others) {
+            for (const axis of ['x', 'y']) {
+                const cross = axis === 'x' ? 'y' : 'x';
+                const mine = stops(placed, axis);
+                for (const at of stops(other, axis)) {
+                    if (!mine.some(stop => near(stop, at)))
+                        continue;
+                    const span = [...stops(placed, cross), ...stops(other, cross)];
+                    touch(axis, at, Math.min(...span), Math.max(...span));
+                }
+            }
+        }
+        return { dx, dy, lines: [...lines.values()] };
+    }
+    $.$bog_vmap_app_pane_snap = $bog_vmap_app_pane_snap;
 })($ || ($ = {}));
 
 ;

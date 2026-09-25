@@ -44457,6 +44457,24 @@ declare namespace $ {
         x(next?: number): number;
         y(next?: number): number;
     }
+    const $bog_vmap_app_doc_guide_base: Omit<typeof $giper_baza_dict, "prototype"> & {
+        new (...args: any[]): $mol_type_override<$giper_baza_dict, {
+            readonly Axis: (auto?: any) => $giper_baza_atom_text | null;
+            readonly At: (auto?: any) => $giper_baza_atom_real | null;
+        }>;
+        path: string;
+    } & {
+        schema: {
+            [x: string]: typeof $giper_baza_pawn;
+        } & {
+            readonly Axis: typeof $giper_baza_atom_text;
+            readonly At: typeof $giper_baza_atom_real;
+        };
+    };
+    export class $bog_vmap_app_doc_guide extends $bog_vmap_app_doc_guide_base {
+        axis(next?: string): string;
+        at(next?: number): number;
+    }
     const $bog_vmap_app_doc_base: Omit<typeof $giper_baza_dict, "prototype"> & {
         new (...args: any[]): $mol_type_override<$giper_baza_dict, {
             readonly Title: (auto?: any) => $giper_baza_atom_text | null;
@@ -44595,6 +44613,44 @@ declare namespace $ {
                 wipe(seat: number): void;
                 pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
                 [$mol_dev_format_head](): any[];
+                land(): $giper_baza_land;
+                head(): $giper_baza_link;
+                land_link(): $giper_baza_link;
+                link(): $giper_baza_link;
+                toJSON(): string;
+                cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                units(): $giper_baza_unit_sand[];
+                units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                meta(next?: $giper_baza_link): $giper_baza_link | null;
+                meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                filled(): boolean;
+                can_change(): boolean;
+                last_change(): $mol_time_moment | null;
+                authors(): $giper_baza_auth_pass[];
+                get $(): $;
+                set $(next: $);
+                destructor(): void;
+                toString(): string;
+                [Symbol.toStringTag]: string;
+                [$mol_ambient_ref]: $;
+                [Symbol.dispose](): void;
+            } | null;
+            readonly Guides: (auto?: any) => {
+                Value: typeof $bog_vmap_app_doc_guide;
+                key(key: $giper_baza_vary_type, auto?: any): $bog_vmap_app_doc_guide;
+                keys(): readonly $giper_baza_vary_type[];
+                dive<Pawn_1 extends typeof $giper_baza_pawn>(key: $giper_baza_vary_type, Pawn: Pawn_1, auto?: any): InstanceType<Pawn_1> | null;
+                [$mol_dev_format_head](): any[];
+                items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                cut(vary: $giper_baza_vary_type): void;
+                move(from: number, to: number): void;
+                wipe(seat: number): void;
+                pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
                 land(): $giper_baza_land;
                 head(): $giper_baza_link;
                 land_link(): $giper_baza_link;
@@ -47636,6 +47692,303 @@ declare namespace $ {
                 [Symbol.toPrimitive](): any;
                 [$mol_key_handle](): any;
             };
+            readonly Guides: {
+                new (): {
+                    Value: typeof $bog_vmap_app_doc_guide;
+                    key(key: $giper_baza_vary_type, auto?: any): $bog_vmap_app_doc_guide;
+                    keys(): readonly $giper_baza_vary_type[];
+                    dive<Pawn_1 extends typeof $giper_baza_pawn>(key: $giper_baza_vary_type, Pawn: Pawn_1, auto?: any): InstanceType<Pawn_1> | null;
+                    [$mol_dev_format_head](): any[];
+                    items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                    splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                    find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                    has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                    add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                    cut(vary: $giper_baza_vary_type): void;
+                    move(from: number, to: number): void;
+                    wipe(seat: number): void;
+                    pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                    land(): $giper_baza_land;
+                    head(): $giper_baza_link;
+                    land_link(): $giper_baza_link;
+                    link(): $giper_baza_link;
+                    toJSON(): string;
+                    cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                    pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                    units(): $giper_baza_unit_sand[];
+                    units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                    meta(next?: $giper_baza_link): $giper_baza_link | null;
+                    meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                    filled(): boolean;
+                    can_change(): boolean;
+                    last_change(): $mol_time_moment | null;
+                    authors(): $giper_baza_auth_pass[];
+                    get $(): $;
+                    set $(next: $);
+                    destructor(): void;
+                    toString(): string;
+                    [Symbol.toStringTag]: string;
+                    [$mol_ambient_ref]: $;
+                    [Symbol.dispose](): void;
+                };
+                toString(): any;
+                tag: keyof typeof $giper_baza_unit_sand_tag;
+                schema: Record<string, typeof $giper_baza_pawn>;
+                with<This extends typeof $giper_baza_dict, const Schema extends Record<string, {
+                    tag: keyof typeof $giper_baza_unit_sand_tag;
+                    new (): {};
+                }>>(this: This, schema: Schema, path?: string): Omit<This, "prototype"> & {
+                    new (...args: any[]): $mol_type_override<InstanceType<This>, { readonly [Key in keyof Schema]: (auto?: any) => InstanceType<Schema[Key]> | null; }>;
+                    path: string;
+                } & {
+                    schema: {
+                        [x: string]: typeof $giper_baza_pawn;
+                    } & Schema;
+                };
+                of<Init extends new (...args: any[]) => any>(init: Init): {
+                    new (): {
+                        items(next?: readonly (Init extends typeof $mol_schema_any ? Init : {
+                            new (value?: any): {
+                                constructor: Function;
+                                toString(): string;
+                                toLocaleString(): string;
+                                valueOf(): Object;
+                                hasOwnProperty(v: PropertyKey): boolean;
+                                isPrototypeOf(v: Object): boolean;
+                                propertyIsEnumerable(v: PropertyKey): boolean;
+                            };
+                            Class: Init;
+                            toString(): string;
+                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                            default: InstanceType<Init>;
+                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                            [Symbol.toStringTag]: string;
+                            [$mol_key_handle](): string;
+                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                            getPrototypeOf(o: any): any;
+                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                            getOwnPropertyNames(o: any): string[];
+                            create(o: object | null): any;
+                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                            defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
+                            defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
+                            seal<T>(o: T): T;
+                            freeze<T extends Function>(f: T): T;
+                            freeze<T extends {
+                                [idx: string]: U | null | undefined | object;
+                            }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
+                            freeze<T>(o: T): Readonly<T>;
+                            preventExtensions<T>(o: T): T;
+                            isSealed(o: any): boolean;
+                            isFrozen(o: any): boolean;
+                            isExtensible(o: any): boolean;
+                            keys(o: object): string[];
+                            keys(o: {}): string[];
+                            assign<T extends {}, U_1>(target: T, source: U_1): T & U_1;
+                            assign<T extends {}, U_2, V>(target: T, source1: U_2, source2: V): T & U_2 & V;
+                            assign<T extends {}, U_3, V_1, W>(target: T, source1: U_3, source2: V_1, source3: W): T & U_3 & V_1 & W;
+                            assign(target: object, ...sources: any[]): any;
+                            getOwnPropertySymbols(o: any): symbol[];
+                            is(value1: any, value2: any): boolean;
+                            setPrototypeOf(o: any, proto: object | null): any;
+                            values<T>(o: {
+                                [s: string]: T;
+                            } | ArrayLike<T>): T[];
+                            values(o: {}): any[];
+                            entries<T>(o: {
+                                [s: string]: T;
+                            } | ArrayLike<T>): [string, T][];
+                            entries(o: {}): [string, any][];
+                            getOwnPropertyDescriptors<T>(o: T): { [P in keyof T]: TypedPropertyDescriptor<T[P]>; } & {
+                                [x: string]: PropertyDescriptor;
+                            };
+                            fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): {
+                                [k: string]: T;
+                            };
+                            fromEntries(entries: Iterable<readonly any[]>): any;
+                            hasOwn(o: object, v: PropertyKey): boolean;
+                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                        })["default"][]): readonly (Init extends typeof $mol_schema_any ? Init : {
+                            new (value?: any): {
+                                constructor: Function;
+                                toString(): string;
+                                toLocaleString(): string;
+                                valueOf(): Object;
+                                hasOwnProperty(v: PropertyKey): boolean;
+                                isPrototypeOf(v: Object): boolean;
+                                propertyIsEnumerable(v: PropertyKey): boolean;
+                            };
+                            Class: Init;
+                            toString(): string;
+                            guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                            cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                            default: InstanceType<Init>;
+                            check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                            [Symbol.toStringTag]: string;
+                            [$mol_key_handle](): string;
+                            [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                            getPrototypeOf(o: any): any;
+                            getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                            getOwnPropertyNames(o: any): string[];
+                            create(o: object | null): any;
+                            create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                            defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                            defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                            seal<T_1>(o: T_1): T_1;
+                            freeze<T_1 extends Function>(f: T_1): T_1;
+                            freeze<T_1 extends {
+                                [idx: string]: U | null | undefined | object;
+                            }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                            freeze<T_1>(o: T_1): Readonly<T_1>;
+                            preventExtensions<T_1>(o: T_1): T_1;
+                            isSealed(o: any): boolean;
+                            isFrozen(o: any): boolean;
+                            isExtensible(o: any): boolean;
+                            keys(o: object): string[];
+                            keys(o: {}): string[];
+                            assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                            assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                            assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                            assign(target: object, ...sources: any[]): any;
+                            getOwnPropertySymbols(o: any): symbol[];
+                            is(value1: any, value2: any): boolean;
+                            setPrototypeOf(o: any, proto: object | null): any;
+                            values<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): T_1[];
+                            values(o: {}): any[];
+                            entries<T_1>(o: {
+                                [s: string]: T_1;
+                            } | ArrayLike<T_1>): [string, T_1][];
+                            entries(o: {}): [string, any][];
+                            getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                                [x: string]: PropertyDescriptor;
+                            };
+                            fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                                [k: string]: T_1;
+                            };
+                            fromEntries(entries: Iterable<readonly any[]>): any;
+                            hasOwn(o: object, v: PropertyKey): boolean;
+                            groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                        })["default"][];
+                        items_vary(next?: readonly $giper_baza_vary_type[], tag?: keyof typeof $giper_baza_unit_sand_tag): readonly $giper_baza_vary_type[];
+                        splice(next: readonly $giper_baza_vary_type[], from?: number, to?: number, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        find(vary: $giper_baza_vary_type): $giper_baza_unit_sand | null;
+                        has(vary: $giper_baza_vary_type, next?: boolean, tag?: keyof typeof $giper_baza_unit_sand_tag): boolean;
+                        add(vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): void;
+                        cut(vary: $giper_baza_vary_type): void;
+                        move(from: number, to: number): void;
+                        wipe(seat: number): void;
+                        pawn_make<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1, vary: $giper_baza_vary_type, tag?: keyof typeof $giper_baza_unit_sand_tag): InstanceType<Pawn_1>;
+                        [$mol_dev_format_head](): any[];
+                        land(): $giper_baza_land;
+                        head(): $giper_baza_link;
+                        land_link(): $giper_baza_link;
+                        link(): $giper_baza_link;
+                        toJSON(): string;
+                        cast<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1): InstanceType<Pawn_1>;
+                        pawns<Pawn_1 extends typeof $giper_baza_pawn>(Pawn: Pawn_1 | null): readonly InstanceType<Pawn_1>[];
+                        units(): $giper_baza_unit_sand[];
+                        units_of(peer: $giper_baza_link | null): $giper_baza_unit_sand[];
+                        meta(next?: $giper_baza_link): $giper_baza_link | null;
+                        meta_of(peer: $giper_baza_link | null): $giper_baza_link | null;
+                        filled(): boolean;
+                        can_change(): boolean;
+                        last_change(): $mol_time_moment | null;
+                        authors(): $giper_baza_auth_pass[];
+                        get $(): $;
+                        set $(next: $);
+                        destructor(): void;
+                        toString(): string;
+                        [Symbol.toStringTag]: string;
+                        [$mol_ambient_ref]: $;
+                        [Symbol.dispose](): void;
+                    };
+                    Item: Init extends typeof $mol_schema_any ? Init : {
+                        new (value?: any): {
+                            constructor: Function;
+                            toString(): string;
+                            toLocaleString(): string;
+                            valueOf(): Object;
+                            hasOwnProperty(v: PropertyKey): boolean;
+                            isPrototypeOf(v: Object): boolean;
+                            propertyIsEnumerable(v: PropertyKey): boolean;
+                        };
+                        Class: Init;
+                        toString(): string;
+                        guard<This extends typeof $mol_schema_any, Value>(this: This, value: Value): Value & This["default"];
+                        cast<This extends typeof $mol_schema_any>(this: This, value: unknown): This["default"];
+                        default: InstanceType<Init>;
+                        check<This extends typeof $mol_schema_any, Value_1>(this: This, value: Value_1): value is Value_1 & This["default"];
+                        [Symbol.toStringTag]: string;
+                        [$mol_key_handle](): string;
+                        [Symbol.hasInstance]<This extends typeof $mol_schema_any, Value_2>(this: This, value: Value_2): value is Value_2 & This["default"];
+                        getPrototypeOf(o: any): any;
+                        getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+                        getOwnPropertyNames(o: any): string[];
+                        create(o: object | null): any;
+                        create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+                        defineProperty<T_1>(o: T_1, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T_1;
+                        defineProperties<T_1>(o: T_1, properties: PropertyDescriptorMap & ThisType<any>): T_1;
+                        seal<T_1>(o: T_1): T_1;
+                        freeze<T_1 extends Function>(f: T_1): T_1;
+                        freeze<T_1 extends {
+                            [idx: string]: U | null | undefined | object;
+                        }, U extends string | bigint | number | boolean | symbol>(o: T_1): Readonly<T_1>;
+                        freeze<T_1>(o: T_1): Readonly<T_1>;
+                        preventExtensions<T_1>(o: T_1): T_1;
+                        isSealed(o: any): boolean;
+                        isFrozen(o: any): boolean;
+                        isExtensible(o: any): boolean;
+                        keys(o: object): string[];
+                        keys(o: {}): string[];
+                        assign<T_1 extends {}, U_1>(target: T_1, source: U_1): T_1 & U_1;
+                        assign<T_1 extends {}, U_2, V>(target: T_1, source1: U_2, source2: V): T_1 & U_2 & V;
+                        assign<T_1 extends {}, U_3, V_1, W>(target: T_1, source1: U_3, source2: V_1, source3: W): T_1 & U_3 & V_1 & W;
+                        assign(target: object, ...sources: any[]): any;
+                        getOwnPropertySymbols(o: any): symbol[];
+                        is(value1: any, value2: any): boolean;
+                        setPrototypeOf(o: any, proto: object | null): any;
+                        values<T_1>(o: {
+                            [s: string]: T_1;
+                        } | ArrayLike<T_1>): T_1[];
+                        values(o: {}): any[];
+                        entries<T_1>(o: {
+                            [s: string]: T_1;
+                        } | ArrayLike<T_1>): [string, T_1][];
+                        entries(o: {}): [string, any][];
+                        getOwnPropertyDescriptors<T_1>(o: T_1): { [P in keyof T_1]: TypedPropertyDescriptor<T_1[P]>; } & {
+                            [x: string]: PropertyDescriptor;
+                        };
+                        fromEntries<T_1 = any>(entries: Iterable<readonly [PropertyKey, T_1]>): {
+                            [k: string]: T_1;
+                        };
+                        fromEntries(entries: Iterable<readonly any[]>): any;
+                        hasOwn(o: object, v: PropertyKey): boolean;
+                        groupBy<K extends PropertyKey, T>(items: Iterable<T>, keySelector: (item: T, index: number) => K): Partial<Record<K, T[]>>;
+                    };
+                    toString(): any;
+                    tag: keyof typeof $giper_baza_unit_sand_tag;
+                    of<Init extends new (...args: any[]) => any>(init: Init): /*elided*/ any;
+                    meta: null | $giper_baza_link;
+                    make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                    $: $;
+                    create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                    toJSON(): any;
+                    destructor(): void;
+                    [Symbol.toPrimitive](): any;
+                    [$mol_key_handle](): any;
+                };
+                meta: null | $giper_baza_link;
+                make<This extends typeof $mol_object>(this: This, config: Partial<InstanceType<This>>): InstanceType<This>;
+                $: $;
+                create<Instance>(this: new (init?: (instance: any) => void) => Instance, init?: (instance: $mol_type_writable<Instance>) => void): Instance;
+                toJSON(): any;
+                destructor(): void;
+                [Symbol.toPrimitive](): any;
+                [$mol_key_handle](): any;
+            };
         };
     };
     export class $bog_vmap_app_doc extends $bog_vmap_app_doc_base {
@@ -48392,7 +48745,7 @@ declare namespace $ {
     };
     export class $bog_vmap_app_doc_home extends $bog_vmap_app_doc_home_base {
     }
-    export const $bog_vmap_app_doc_schema: readonly [typeof $bog_vmap_app_doc, typeof $bog_vmap_app_doc_node, typeof $bog_vmap_app_doc_snap, typeof $bog_vmap_app_doc_spot, typeof $bog_vmap_app_doc_home];
+    export const $bog_vmap_app_doc_schema: readonly [typeof $bog_vmap_app_doc, typeof $bog_vmap_app_doc_node, typeof $bog_vmap_app_doc_snap, typeof $bog_vmap_app_doc_spot, typeof $bog_vmap_app_doc_guide, typeof $bog_vmap_app_doc_home];
     export {};
 }
 
@@ -51622,6 +51975,13 @@ declare namespace $ {
     type $bog_vmap_app_store_parts = {
         readonly [klass: string]: string;
     };
+    type $bog_vmap_app_store_guide = {
+        readonly axis: 'x' | 'y';
+        readonly at: number;
+    };
+    type $bog_vmap_app_store_guides = {
+        readonly [id: string]: $bog_vmap_app_store_guide;
+    };
     type $bog_vmap_app_store_state = {
         readonly source: string;
         readonly js: $bog_vmap_app_store_parts;
@@ -51649,6 +52009,7 @@ declare namespace $ {
         doc_keep(doc: $bog_vmap_app_doc): void;
         draft_source(next?: string): string;
         draft_spots(next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
+        draft_guides(next?: $bog_vmap_app_store_guides): $bog_vmap_app_store_guides;
         draft_pack(next?: string): string;
         nodes(doc: $bog_vmap_app_doc): $bog_vmap_app_doc_node[];
         doc_source(doc: $bog_vmap_app_doc, next?: string): string;
@@ -51657,6 +52018,8 @@ declare namespace $ {
         node_css(doc: $bog_vmap_app_doc, name: string, next?: string): string;
         doc_root(doc: $bog_vmap_app_doc, next?: string): string;
         doc_spots(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_spots): $bog_vmap_app_store_spots;
+        doc_guides(doc: $bog_vmap_app_doc, next?: $bog_vmap_app_store_guides): $bog_vmap_app_store_guides;
+        guides(next?: $bog_vmap_app_store_guides): $bog_vmap_app_store_guides;
         source(next?: string): string;
         assets(): $bog_vmap_asset;
         asset_put(blob: $mol_blob): string;
@@ -55766,214 +56129,219 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane['spots'] >
 	>
-	type $bog_vmap_app_pane__picked_bog_vmap_app_76 = $mol_type_enforce<
+	type $bog_vmap_app_pane__guides_bog_vmap_app_76 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['guides'] >
+		,
+		ReturnType< $bog_vmap_app_pane['guides'] >
+	>
+	type $bog_vmap_app_pane__picked_bog_vmap_app_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['picked'] >
 		,
 		ReturnType< $bog_vmap_app_pane['picked'] >
 	>
-	type $bog_vmap_app_pane__inner_bog_vmap_app_77 = $mol_type_enforce<
+	type $bog_vmap_app_pane__inner_bog_vmap_app_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner'] >
 		,
 		ReturnType< $bog_vmap_app_pane['inner'] >
 	>
-	type $bog_vmap_app_pane__entered_bog_vmap_app_78 = $mol_type_enforce<
+	type $bog_vmap_app_pane__entered_bog_vmap_app_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['entered'] >
 		,
 		ReturnType< $bog_vmap_app_pane['entered'] >
 	>
-	type $bog_vmap_app_pane__doc_js_bog_vmap_app_79 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_js_bog_vmap_app_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_js'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_js'] >
 	>
-	type $bog_vmap_app_pane__doc_root_bog_vmap_app_80 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_root_bog_vmap_app_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_root'] >
 	>
-	type $bog_vmap_app_pane__libs_bog_vmap_app_81 = $mol_type_enforce<
+	type $bog_vmap_app_pane__libs_bog_vmap_app_82 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['libs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['libs'] >
 	>
-	type $bog_vmap_app_pane__carrying_bog_vmap_app_82 = $mol_type_enforce<
+	type $bog_vmap_app_pane__carrying_bog_vmap_app_83 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['carrying'] >
 		,
 		ReturnType< $bog_vmap_app_pane['carrying'] >
 	>
-	type $bog_vmap_app_pane__wires_bog_vmap_app_83 = $mol_type_enforce<
+	type $bog_vmap_app_pane__wires_bog_vmap_app_84 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_wires'] >
 		,
 		ReturnType< $bog_vmap_app_pane['wires'] >
 	>
-	type $bog_vmap_app_pane__part_ports_bog_vmap_app_84 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_ports_bog_vmap_app_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_ports'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_ports'] >
 	>
-	type $bog_vmap_app_pane__part_overs_bog_vmap_app_85 = $mol_type_enforce<
+	type $bog_vmap_app_pane__part_overs_bog_vmap_app_86 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['part_overs'] >
 		,
 		ReturnType< $bog_vmap_app_pane['part_overs'] >
 	>
-	type $bog_vmap_app_pane__link_add_bog_vmap_app_86 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_add_bog_vmap_app_87 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_add'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_add'] >
 	>
-	type $bog_vmap_app_pane__link_drop_bog_vmap_app_87 = $mol_type_enforce<
+	type $bog_vmap_app_pane__link_drop_bog_vmap_app_88 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['link_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['link_drop'] >
 	>
-	type $bog_vmap_app_pane__containers_bog_vmap_app_88 = $mol_type_enforce<
+	type $bog_vmap_app_pane__containers_bog_vmap_app_89 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_containers'] >
 		,
 		ReturnType< $bog_vmap_app_pane['containers'] >
 	>
-	type $bog_vmap_app_pane__doc_names_bog_vmap_app_89 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_names_bog_vmap_app_90 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_names'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_names'] >
 	>
-	type $bog_vmap_app_pane__doc_paths_bog_vmap_app_90 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_paths_bog_vmap_app_91 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_paths'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_paths'] >
 	>
-	type $bog_vmap_app_pane__doc_key_bog_vmap_app_91 = $mol_type_enforce<
+	type $bog_vmap_app_pane__doc_key_bog_vmap_app_92 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_key'] >
 		,
 		ReturnType< $bog_vmap_app_pane['doc_key'] >
 	>
-	type $bog_vmap_app_pane__node_title_bog_vmap_app_92 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_title_bog_vmap_app_93 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_title'] >
 	>
-	type $bog_vmap_app_pane__axis_bog_vmap_app_93 = $mol_type_enforce<
+	type $bog_vmap_app_pane__axis_bog_vmap_app_94 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_axis'] >
 		,
 		ReturnType< $bog_vmap_app_pane['axis'] >
 	>
-	type $bog_vmap_app_pane__tree_move_bog_vmap_app_94 = $mol_type_enforce<
+	type $bog_vmap_app_pane__tree_move_bog_vmap_app_95 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_pane['tree_move'] >
 	>
-	type $bog_vmap_app_pane__carry_drop_bog_vmap_app_95 = $mol_type_enforce<
+	type $bog_vmap_app_pane__carry_drop_bog_vmap_app_96 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['carry_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['carry_drop'] >
 	>
-	type $bog_vmap_app_pane__files_drop_bog_vmap_app_96 = $mol_type_enforce<
+	type $bog_vmap_app_pane__files_drop_bog_vmap_app_97 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['files_drop'] >
 		,
 		ReturnType< $bog_vmap_app_pane['files_drop'] >
 	>
-	type $bog_vmap_app_pane__node_delete_bog_vmap_app_97 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_delete_bog_vmap_app_98 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 	>
-	type $bog_vmap_app_pane__node_copy_bog_vmap_app_98 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_copy_bog_vmap_app_99 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 	>
-	type $bog_vmap_app_pane__node_wrap_bog_vmap_app_99 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_wrap_bog_vmap_app_100 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 	>
-	type $bog_vmap_app_pane__node_group_bog_vmap_app_100 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_group_bog_vmap_app_101 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_group'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_group'] >
 	>
-	type $bog_vmap_app_pane__node_ungroup_bog_vmap_app_101 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_ungroup_bog_vmap_app_102 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_ungroup'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_ungroup'] >
 	>
-	type $bog_vmap_app_pane__ungroup_enabled_bog_vmap_app_102 = $mol_type_enforce<
+	type $bog_vmap_app_pane__ungroup_enabled_bog_vmap_app_103 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['ungroup_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_pane['ungroup_enabled'] >
 	>
-	type $bog_vmap_app_pane__node_reset_all_bog_vmap_app_103 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_reset_all_bog_vmap_app_104 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_reset_all'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_reset_all'] >
 	>
-	type $bog_vmap_app_pane__reset_enabled_bog_vmap_app_104 = $mol_type_enforce<
+	type $bog_vmap_app_pane__reset_enabled_bog_vmap_app_105 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['reset_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_pane['reset_enabled'] >
 	>
-	type $bog_vmap_app_pane__node_clone_bog_vmap_app_105 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_clone_bog_vmap_app_106 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_clone'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_clone'] >
 	>
-	type $bog_vmap_app_pane__board_draw_bog_vmap_app_106 = $mol_type_enforce<
+	type $bog_vmap_app_pane__board_draw_bog_vmap_app_107 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['board_draw'] >
 		,
 		ReturnType< $bog_vmap_app_pane['board_draw'] >
 	>
-	type $bog_vmap_app_pane__text_draw_bog_vmap_app_107 = $mol_type_enforce<
+	type $bog_vmap_app_pane__text_draw_bog_vmap_app_108 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['text_draw'] >
 		,
 		ReturnType< $bog_vmap_app_pane['text_draw'] >
 	>
-	type $bog_vmap_app_pane__text_enabled_bog_vmap_app_108 = $mol_type_enforce<
+	type $bog_vmap_app_pane__text_enabled_bog_vmap_app_109 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['text_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_pane['text_enabled'] >
 	>
-	type $bog_vmap_app_pane__node_resize_bog_vmap_app_109 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_resize_bog_vmap_app_110 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_resize'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_resize'] >
 	>
-	type $bog_vmap_app_pane__node_text_bog_vmap_app_110 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_text_bog_vmap_app_111 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_text'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_text'] >
 	>
-	type $bog_vmap_app_pane__node_text_kind_bog_vmap_app_111 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_text_kind_bog_vmap_app_112 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_text_kind'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_text_kind'] >
 	>
-	type $bog_vmap_app_pane__node_text_write_bog_vmap_app_112 = $mol_type_enforce<
+	type $bog_vmap_app_pane__node_text_write_bog_vmap_app_113 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_text_write'] >
 		,
 		ReturnType< $bog_vmap_app_pane['node_text_write'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_113 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_114 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['idle_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_view__sub_bog_vmap_app_114 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_115 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_115 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_116 = $mol_type_enforce<
 		({ 
 			'width': ReturnType< $bog_vmap_app['right_width'] >,
 		}) 
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_116 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_117 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['right_content'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__attr_bog_vmap_app_117 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_118 = $mol_type_enforce<
 		({ 
 			'bog_vmap_app_right_grip': string,
 			'title': string,
@@ -55981,7 +56349,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__event_bog_vmap_app_118 = $mol_type_enforce<
+	type $mol_view__event_bog_vmap_app_119 = $mol_type_enforce<
 		({ 
 			pointerdown( next?: ReturnType< $bog_vmap_app['grip_press'] > ): ReturnType< $bog_vmap_app['grip_press'] >,
 			dblclick( next?: ReturnType< $bog_vmap_app['grip_reset'] > ): ReturnType< $bog_vmap_app['grip_reset'] >,
@@ -55989,12 +56357,12 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['event'] >
 	>
-	type $mol_switch__value_bog_vmap_app_119 = $mol_type_enforce<
+	type $mol_switch__value_bog_vmap_app_120 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['right_tab'] >
 		,
 		ReturnType< $mol_switch['value'] >
 	>
-	type $mol_switch__options_bog_vmap_app_120 = $mol_type_enforce<
+	type $mol_switch__options_bog_vmap_app_121 = $mol_type_enforce<
 		({ 
 			'design': string,
 			'code': string,
@@ -56003,437 +56371,437 @@ declare namespace $ {
 		,
 		ReturnType< $mol_switch['options'] >
 	>
-	type $bog_vmap_app_align__act_bog_vmap_app_121 = $mol_type_enforce<
+	type $bog_vmap_app_align__act_bog_vmap_app_122 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['align_act'] >
 		,
 		ReturnType< $bog_vmap_app_align['act'] >
 	>
-	type $bog_vmap_app_align__button_enabled_bog_vmap_app_122 = $mol_type_enforce<
+	type $bog_vmap_app_align__button_enabled_bog_vmap_app_123 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['align_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_align['button_enabled'] >
 	>
-	type $bog_vmap_app_align__note_bog_vmap_app_123 = $mol_type_enforce<
+	type $bog_vmap_app_align__note_bog_vmap_app_124 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['align_note'] >
 		,
 		ReturnType< $bog_vmap_app_align['note'] >
 	>
-	type $mol_page__title_bog_vmap_app_124 = $mol_type_enforce<
+	type $mol_page__title_bog_vmap_app_125 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__sub_bog_vmap_app_125 = $mol_type_enforce<
+	type $mol_page__sub_bog_vmap_app_126 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['sub'] >
 	>
-	type $mol_page__body_bog_vmap_app_126 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_127 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $mol_page__foot_bog_vmap_app_127 = $mol_type_enforce<
+	type $mol_page__foot_bog_vmap_app_128 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['canvas_foot'] >
 		,
 		ReturnType< $mol_page['foot'] >
 	>
-	type $bog_vmap_app_scenes__store_bog_vmap_app_128 = $mol_type_enforce<
+	type $bog_vmap_app_scenes__store_bog_vmap_app_129 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_scenes['store'] >
 	>
-	type $bog_vmap_app_layers__source_bog_vmap_app_129 = $mol_type_enforce<
+	type $bog_vmap_app_layers__source_bog_vmap_app_130 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_src'] >
 		,
 		ReturnType< $bog_vmap_app_layers['source'] >
 	>
-	type $bog_vmap_app_layers__root_bog_vmap_app_130 = $mol_type_enforce<
+	type $bog_vmap_app_layers__root_bog_vmap_app_131 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_root'] >
 		,
 		ReturnType< $bog_vmap_app_layers['root'] >
 	>
-	type $bog_vmap_app_layers__doc_key_bog_vmap_app_131 = $mol_type_enforce<
+	type $bog_vmap_app_layers__doc_key_bog_vmap_app_132 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['doc_key'] >
 		,
 		ReturnType< $bog_vmap_app_layers['doc_key'] >
 	>
-	type $bog_vmap_app_layers__picked_bog_vmap_app_132 = $mol_type_enforce<
+	type $bog_vmap_app_layers__picked_bog_vmap_app_133 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['picked'] >
 		,
 		ReturnType< $bog_vmap_app_layers['picked'] >
 	>
-	type $bog_vmap_app_layers__inner_bog_vmap_app_133 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_bog_vmap_app_134 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner'] >
 	>
-	type $bog_vmap_app_layers__inner_kids_bog_vmap_app_134 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_kids_bog_vmap_app_135 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_kids'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_kids'] >
 	>
-	type $bog_vmap_app_layers__inner_class_bog_vmap_app_135 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_class_bog_vmap_app_136 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_class'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_class'] >
 	>
-	type $bog_vmap_app_layers__inner_alien_bog_vmap_app_136 = $mol_type_enforce<
+	type $bog_vmap_app_layers__inner_alien_bog_vmap_app_137 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inner_alien'] >
 		,
 		ReturnType< $bog_vmap_app_layers['inner_alien'] >
 	>
-	type $bog_vmap_app_layers__node_title_bog_vmap_app_137 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_bog_vmap_app_138 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title'] >
 	>
-	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_138 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_title_note_bog_vmap_app_139 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_title_note'] >
 	>
-	type $bog_vmap_app_layers__tree_move_bog_vmap_app_139 = $mol_type_enforce<
+	type $bog_vmap_app_layers__tree_move_bog_vmap_app_140 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['tree_move'] >
 		,
 		ReturnType< $bog_vmap_app_layers['tree_move'] >
 	>
-	type $bog_vmap_app_layers__node_show_bog_vmap_app_140 = $mol_type_enforce<
+	type $bog_vmap_app_layers__node_show_bog_vmap_app_141 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_show'] >
 		,
 		ReturnType< $bog_vmap_app_layers['node_show'] >
 	>
-	type $bog_vmap_app_layers__editable_bog_vmap_app_141 = $mol_type_enforce<
+	type $bog_vmap_app_layers__editable_bog_vmap_app_142 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_layers['editable'] >
 	>
-	type $bog_vmap_app_shelf__Title_bog_vmap_app_142 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__Title_bog_vmap_app_143 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_shelf['Title'] >
 	>
-	type $bog_vmap_app_shelf__editable_bog_vmap_app_143 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__editable_bog_vmap_app_144 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['editable'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['editable'] >
 	>
-	type $bog_vmap_app_shelf__links_bog_vmap_app_144 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__links_bog_vmap_app_145 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['links'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['links'] >
 	>
-	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_145 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__pack_link_bog_vmap_app_146 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 	>
-	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_146 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__land_classes_bog_vmap_app_147 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_classes'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 	>
-	type $bog_vmap_app_shelf__class_list_bog_vmap_app_147 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__class_list_bog_vmap_app_148 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lib_class_list'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['class_list'] >
 	>
-	type $bog_vmap_app_shelf__place_bog_vmap_app_148 = $mol_type_enforce<
+	type $bog_vmap_app_shelf__place_bog_vmap_app_149 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['shelf_place'] >
 		,
 		ReturnType< $bog_vmap_app_shelf['place'] >
 	>
-	type $bog_vmap_app_inspect__source_bog_vmap_app_149 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__source_bog_vmap_app_150 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['source'] >
 	>
-	type $bog_vmap_app_inspect__peers_bog_vmap_app_150 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__peers_bog_vmap_app_151 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_peers'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['peers'] >
 	>
-	type $bog_vmap_app_inspect__pack_bog_vmap_app_151 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__pack_bog_vmap_app_152 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 	>
-	type $bog_vmap_app_inspect__class_title_bog_vmap_app_152 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__class_title_bog_vmap_app_153 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['class_title'] >
 	>
-	type $bog_vmap_app_inspect__base_bog_vmap_app_153 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__base_bog_vmap_app_154 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_base'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['base'] >
 	>
-	type $bog_vmap_app_inspect__bases_bog_vmap_app_154 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__bases_bog_vmap_app_155 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_bases'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['bases'] >
 	>
-	type $bog_vmap_app_inspect__base_titles_bog_vmap_app_155 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__base_titles_bog_vmap_app_156 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_base_titles'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['base_titles'] >
 	>
-	type $bog_vmap_app_inspect__sub_note_bog_vmap_app_156 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__sub_note_bog_vmap_app_157 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $bog_vmap_app_inspect['sub_note'] >
 	>
-	type $bog_vmap_app_inspect__title_note_bog_vmap_app_157 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__title_note_bog_vmap_app_158 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_title_note'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['title_note'] >
 	>
-	type $bog_vmap_app_inspect__renamable_bog_vmap_app_158 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__renamable_bog_vmap_app_159 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_renamable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['renamable'] >
 	>
-	type $bog_vmap_app_inspect__cell_bog_vmap_app_159 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__cell_bog_vmap_app_160 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_cell'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['cell'] >
 	>
-	type $bog_vmap_app_inspect__resettable_bog_vmap_app_160 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__resettable_bog_vmap_app_161 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_resettable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['resettable'] >
 	>
-	type $bog_vmap_app_inspect__reset_bog_vmap_app_161 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__reset_bog_vmap_app_162 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_reset'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['reset'] >
 	>
-	type $bog_vmap_app_inspect__share_able_bog_vmap_app_162 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_able_bog_vmap_app_163 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_able'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_able'] >
 	>
-	type $bog_vmap_app_inspect__share_mark_bog_vmap_app_163 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_mark_bog_vmap_app_164 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_mark'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_mark'] >
 	>
-	type $bog_vmap_app_inspect__share_bog_vmap_app_164 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_bog_vmap_app_165 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share'] >
 	>
-	type $bog_vmap_app_inspect__share_unshare_bog_vmap_app_165 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_unshare_bog_vmap_app_166 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_unshare'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_unshare'] >
 	>
-	type $bog_vmap_app_inspect__shares_bog_vmap_app_166 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__shares_bog_vmap_app_167 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_shares'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['shares'] >
 	>
-	type $bog_vmap_app_inspect__share_uses_bog_vmap_app_167 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_uses_bog_vmap_app_168 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_uses'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_uses'] >
 	>
-	type $bog_vmap_app_inspect__share_value_bog_vmap_app_168 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_value_bog_vmap_app_169 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_share_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['share_value'] >
 	>
-	type $bog_vmap_app_inspect__editable_bog_vmap_app_169 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__editable_bog_vmap_app_170 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 	>
-	type $mol_page__title_bog_vmap_app_170 = $mol_type_enforce<
+	type $mol_page__title_bog_vmap_app_171 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__body_bog_vmap_app_171 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_172 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_172 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_173 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_173 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_174 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_174 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_175 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_175 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_176 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_176 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_177 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_177 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_178 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_178 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_179 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_179 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_180 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_180 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_181 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_app_code__node_note_bog_vmap_app_181 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_note_bog_vmap_app_182 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_node_note'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_note'] >
 	>
-	type $bog_vmap_app_code__editable_bog_vmap_app_182 = $mol_type_enforce<
+	type $bog_vmap_app_code__editable_bog_vmap_app_183 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_code['editable'] >
 	>
-	type $mol_chip__title_bog_vmap_app_183 = $mol_type_enforce<
+	type $mol_chip__title_bog_vmap_app_184 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['title'] >
 	>
-	type $mol_chip__hint_bog_vmap_app_184 = $mol_type_enforce<
+	type $mol_chip__hint_bog_vmap_app_185 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['hint'] >
 	>
-	type $bog_vmap_app_history__Title_bog_vmap_app_185 = $mol_type_enforce<
+	type $bog_vmap_app_history__Title_bog_vmap_app_186 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_history['Title'] >
 	>
-	type $bog_vmap_app_history__store_bog_vmap_app_186 = $mol_type_enforce<
+	type $bog_vmap_app_history__store_bog_vmap_app_187 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_history['store'] >
 	>
-	type $bog_vmap_app_history__state_bog_vmap_app_187 = $mol_type_enforce<
+	type $bog_vmap_app_history__state_bog_vmap_app_188 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['history_state'] >
 		,
 		ReturnType< $bog_vmap_app_history['state'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_188 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_189 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_189 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_190 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_status__status_bog_vmap_app_190 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_191 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['status'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_191 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_192 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['notes'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_192 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_193 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_title'] >
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_193 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_194 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_194 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_195 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_full'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_status__status_bog_vmap_app_195 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_196 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['error'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_196 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_197 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inside_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_197 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_198 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_title_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_198 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_199 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_text'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_199 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_200 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_content'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_200 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_201 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_201 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_202 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_202 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_203 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_203 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_204 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_default'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_204 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_205 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_205 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_206 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_206 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_207 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__style_bog_vmap_app_207 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_208 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -56441,7 +56809,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_208 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_209 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
@@ -56600,6 +56968,7 @@ declare namespace $ {
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
+		guides( next?: Record<string, any> ): Record<string, any>
 		selected( next?: any ): any
 		picked( next?: readonly(string)[] ): readonly(string)[]
 		inner( next?: string ): string
@@ -56697,6 +57066,7 @@ declare namespace $.$$ {
                 readonly y: number;
             };
         }): $bog_vmap_app_store_spots;
+        guides(next?: $bog_vmap_app_store_guides): $bog_vmap_app_store_guides;
         links(next?: string): string;
         store_links(): string;
         store_stage(): "ready" | "making" | "readonly" | "loading";
@@ -57088,24 +57458,6 @@ declare namespace $ {
 }
 
 declare namespace $ {
-    type $bog_vmap_app_pane_snap_axis = 'x' | 'y';
-    type $bog_vmap_app_pane_snap_line = {
-        readonly axis: $bog_vmap_app_pane_snap_axis;
-        readonly at: number;
-        readonly from: number;
-        readonly to: number;
-    };
-    type $bog_vmap_app_pane_snap = {
-        readonly dx: number;
-        readonly dy: number;
-        readonly lines: readonly $bog_vmap_app_pane_snap_line[];
-    };
-    function $bog_vmap_app_pane_snap_stops(box: $bog_vmap_bridge_rect, axis: $bog_vmap_app_pane_snap_axis): number[];
-    function $bog_vmap_app_pane_snap_gap(mine: readonly number[], theirs: readonly number[], slack: number): number;
-    function $bog_vmap_app_pane_snap(moving: $bog_vmap_bridge_rect, others: readonly $bog_vmap_bridge_rect[], slack: number): $bog_vmap_app_pane_snap;
-}
-
-declare namespace $ {
     type $bog_vmap_app_pane_ruler_tick = {
         readonly at: number;
         readonly label: number;
@@ -57417,131 +57769,170 @@ declare namespace $ {
 		ReturnType< $mol_view['style'] >
 	>
 	type $mol_view__style_bog_vmap_app_pane_55 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['guide_style'] >
+		,
+		ReturnType< $mol_view['style'] >
+	>
+	type $mol_view__attr_bog_vmap_app_pane_56 = $mol_type_enforce<
+		({ 
+			'bog_vmap_app_pane_guide_picked': ReturnType< $bog_vmap_app_pane['guide_picked'] >,
+			'bog_vmap_app_pane_guide_axis': ReturnType< $bog_vmap_app_pane['guide_axis'] >,
+			'title': string,
+		})  & ReturnType< $mol_view['attr'] >
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__event_bog_vmap_app_pane_57 = $mol_type_enforce<
+		({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_pane['guide_press'] > ): ReturnType< $bog_vmap_app_pane['guide_press'] >,
+			pointermove( next?: ReturnType< $bog_vmap_app_pane['guide_move'] > ): ReturnType< $bog_vmap_app_pane['guide_move'] >,
+			pointerup( next?: ReturnType< $bog_vmap_app_pane['guide_release'] > ): ReturnType< $bog_vmap_app_pane['guide_release'] >,
+		})  & ReturnType< $mol_view['event'] >
+		,
+		ReturnType< $mol_view['event'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_58 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['gap_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_56 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_59 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_57 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_60 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ruler_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_58 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ruler_sub'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_59 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_62 = $mol_type_enforce<
+		({ 
+			'title': string,
+		})  & ReturnType< $mol_view['attr'] >
+		,
+		ReturnType< $mol_view['attr'] >
+	>
+	type $mol_view__event_bog_vmap_app_pane_63 = $mol_type_enforce<
+		({ 
+			pointerdown( next?: ReturnType< $bog_vmap_app_pane['ruler_press'] > ): ReturnType< $bog_vmap_app_pane['ruler_press'] >,
+			pointermove( next?: ReturnType< $bog_vmap_app_pane['guide_move'] > ): ReturnType< $bog_vmap_app_pane['guide_move'] >,
+			pointerup( next?: ReturnType< $bog_vmap_app_pane['guide_release'] > ): ReturnType< $bog_vmap_app_pane['guide_release'] >,
+		})  & ReturnType< $mol_view['event'] >
+		,
+		ReturnType< $mol_view['event'] >
+	>
+	type $mol_view__style_bog_vmap_app_pane_64 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['tick_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_60 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_65 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_61 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_66 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['span_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_62 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ghost_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_63 = $mol_type_enforce<
+	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_showed'] >
 		,
 		ReturnType< $bog_vmap_app_menu['showed'] >
 	>
-	type $bog_vmap_app_menu__left_bog_vmap_app_pane_64 = $mol_type_enforce<
+	type $bog_vmap_app_menu__left_bog_vmap_app_pane_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_left'] >
 		,
 		ReturnType< $bog_vmap_app_menu['left'] >
 	>
-	type $bog_vmap_app_menu__top_bog_vmap_app_pane_65 = $mol_type_enforce<
+	type $bog_vmap_app_menu__top_bog_vmap_app_pane_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_top'] >
 		,
 		ReturnType< $bog_vmap_app_menu['top'] >
 	>
-	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_66 = $mol_type_enforce<
+	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_on_node'] >
 		,
 		ReturnType< $bog_vmap_app_menu['on_node'] >
 	>
-	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_67 = $mol_type_enforce<
+	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['editable'] >
 		,
 		ReturnType< $bog_vmap_app_menu['editable'] >
 	>
-	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_68 = $mol_type_enforce<
+	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_menu['copy'] >
 	>
-	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_69 = $mol_type_enforce<
+	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_menu['remove'] >
 	>
-	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_70 = $mol_type_enforce<
+	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_menu['wrap'] >
 	>
-	type $bog_vmap_app_menu__group_bog_vmap_app_pane_71 = $mol_type_enforce<
+	type $bog_vmap_app_menu__group_bog_vmap_app_pane_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_group'] >
 		,
 		ReturnType< $bog_vmap_app_menu['group'] >
 	>
-	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_72 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_ungroup'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup'] >
 	>
-	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_73 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ungroup_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup_enabled'] >
 	>
-	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_74 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_reset_all'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset'] >
 	>
-	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_75 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['reset_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset_enabled'] >
 	>
-	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_76 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent'] >
 	>
-	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_77 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_82 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent_enabled'] >
 	>
-	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_78 = $mol_type_enforce<
+	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_83 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_enter'] >
 		,
 		ReturnType< $bog_vmap_app_menu['enter'] >
 	>
-	type $bog_vmap_app_menu__board_bog_vmap_app_pane_79 = $mol_type_enforce<
+	type $bog_vmap_app_menu__board_bog_vmap_app_pane_84 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_board'] >
 		,
 		ReturnType< $bog_vmap_app_menu['board'] >
 	>
-	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_80 = $mol_type_enforce<
+	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
 		ReturnType< $bog_vmap_app_menu['fit'] >
@@ -57596,10 +57987,17 @@ declare namespace $ {
 		band_style( ): Record<string, any>
 		draft_style( ): Record<string, any>
 		snap_hint_style( id: any): Record<string, any>
+		guide_style( id: any): Record<string, any>
+		guide_picked( id: any): boolean
+		guide_axis( id: any): string
+		guide_press( id: any, next?: any ): any
+		guide_move( id: any, next?: any ): any
+		guide_release( id: any, next?: any ): any
 		gap_style( id: any): Record<string, any>
 		gap_title( id: any): string
 		ruler_style( id: any): Record<string, any>
 		ruler_sub( id: any): readonly($mol_view)[]
+		ruler_press( id: any, next?: any ): any
 		tick_style( id: any): Record<string, any>
 		tick_title( id: any): string
 		span_style( id: any): Record<string, any>
@@ -57651,6 +58049,7 @@ declare namespace $ {
 		doc_src( ): string
 		doc_css( ): string
 		spots( next?: Record<string, any> ): Record<string, any>
+		guides( next?: Record<string, any> ): Record<string, any>
 		picked( next?: readonly(string)[] ): readonly(string)[]
 		inner( ): string
 		doc_js( ): Record<string, any>
@@ -57725,6 +58124,7 @@ declare namespace $ {
 		Band( ): $mol_view
 		Draft( ): $mol_view
 		Snap_hint( id: any): $mol_view
+		Guide( id: any): $mol_view
 		Gap( id: any): $mol_view
 		Ruler( id: any): $mol_view
 		Tick( id: any): $mol_view
@@ -58172,6 +58572,35 @@ declare namespace $.$$ {
         snap_hint_style(index: number): {
             readonly [prop: string]: string;
         };
+        guide_lines(): {
+            readonly [id: string]: $bog_vmap_app_pane_rail;
+        };
+        guide_at(id: string): $bog_vmap_app_pane_rail | null;
+        guide_ids(): readonly string[];
+        guide_rails(): readonly $bog_vmap_app_pane_rail[];
+        guide_views(): $mol_view[];
+        guide_picked(id: string): boolean;
+        guide_axis(id: string): "" | $bog_vmap_app_pane_snap_axis;
+        guide_style(id: string): {
+            readonly [prop: string]: string;
+        };
+        guide_pick(next?: string | null): string | null;
+        guide_drag(next?: $bog_vmap_app_pane_guide_drag | null): $bog_vmap_app_pane_guide_drag | null;
+        guide_snap(axis: $bog_vmap_app_pane_snap_axis, at: number): number;
+        guide_point(event: {
+            readonly clientX: number;
+            readonly clientY: number;
+        }, axis: $bog_vmap_app_pane_snap_axis): number;
+        guide_off(event: {
+            readonly clientX: number;
+            readonly clientY: number;
+        }, axis: $bog_vmap_app_pane_snap_axis): boolean;
+        ruler_press(axis: string, next?: PointerEvent | null): null;
+        guide_press(id: string, next?: PointerEvent | null): null;
+        guide_move(id: string, next?: PointerEvent | null): null;
+        guide_release(id: string, next?: PointerEvent | null): null;
+        guide_drop(id: string): null;
+        grab(event: PointerEvent): void;
         press(next?: {
             screen: readonly [number, number];
             world: readonly [number, number];
@@ -58472,6 +58901,34 @@ declare namespace $.$$ {
 }
 
 declare namespace $.$$ {
+}
+
+declare namespace $ {
+    type $bog_vmap_app_pane_snap_axis = 'x' | 'y';
+    type $bog_vmap_app_pane_snap_line = {
+        readonly axis: $bog_vmap_app_pane_snap_axis;
+        readonly at: number;
+        readonly from: number;
+        readonly to: number;
+    };
+    type $bog_vmap_app_pane_snap = {
+        readonly dx: number;
+        readonly dy: number;
+        readonly lines: readonly $bog_vmap_app_pane_snap_line[];
+    };
+    type $bog_vmap_app_pane_rail = {
+        readonly axis: $bog_vmap_app_pane_snap_axis;
+        readonly at: number;
+    };
+    type $bog_vmap_app_pane_guide_drag = $bog_vmap_app_pane_rail & {
+        readonly id: string;
+        readonly born: boolean;
+        readonly off: boolean;
+    };
+    function $bog_vmap_app_pane_rail_stops(rails: readonly $bog_vmap_app_pane_rail[], axis: $bog_vmap_app_pane_snap_axis): number[];
+    function $bog_vmap_app_pane_snap_stops(box: $bog_vmap_bridge_rect, axis: $bog_vmap_app_pane_snap_axis): number[];
+    function $bog_vmap_app_pane_snap_gap(mine: readonly number[], theirs: readonly number[], slack: number): number;
+    function $bog_vmap_app_pane_snap(moving: $bog_vmap_bridge_rect, others: readonly $bog_vmap_bridge_rect[], slack: number, rails?: readonly $bog_vmap_app_pane_rail[]): $bog_vmap_app_pane_snap;
 }
 
 declare namespace $ {

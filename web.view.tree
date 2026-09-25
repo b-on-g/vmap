@@ -3122,6 +3122,7 @@ $bog_vmap_app $mol_page
 	doc_src \
 	doc_css \
 	spots? *
+	guides? *
 	selected? null
 	picked? /string
 	inner? \
@@ -3290,6 +3291,7 @@ $bog_vmap_app $mol_page
 				doc_src <= doc_src
 				doc_css <= doc_css
 				spots? <=> spots?
+				guides? <=> guides?
 				picked? <=> picked?
 				inner <= inner
 				entered? <=> entered? null
@@ -3543,6 +3545,7 @@ $bog_vmap_app_pane $mol_view
 	doc_src \
 	doc_css \
 	spots? *
+	guides? *
 	picked? /string
 	inner \
 	doc_js *
@@ -3695,6 +3698,18 @@ $bog_vmap_app_pane $mol_view
 		style <= draft_style *
 	Snap_hint* $mol_view
 		style <= snap_hint_style* *
+	Guide* $mol_view
+		style <= guide_style* *
+		attr *
+			^
+			bog_vmap_app_pane_guide_picked <= guide_picked* false
+			bog_vmap_app_pane_guide_axis <= guide_axis* \
+			title \Направляющая: тяните мышью, обратно на линейку или Delete — убрать
+		event *
+			^
+			pointerdown? <=> guide_press*? null
+			pointermove? <=> guide_move*? null
+			pointerup? <=> guide_release*? null
 	Gap* $mol_view
 		style <= gap_style* *
 		sub /
@@ -3702,6 +3717,14 @@ $bog_vmap_app_pane $mol_view
 	Ruler* $mol_view
 		style <= ruler_style* *
 		sub <= ruler_sub* /$mol_view
+		attr *
+			^
+			title \Линейка: тяните с неё направляющую
+		event *
+			^
+			pointerdown? <=> ruler_press*? null
+			pointermove? <=> guide_move*? null
+			pointerup? <=> guide_release*? null
 	Tick* $mol_view
 		style <= tick_style* *
 		sub /
