@@ -64,6 +64,10 @@ namespace $.$$ {
 			return this.Node().base()
 		}
 
+		override layout_shown( next?: boolean ) {
+			return this.$.$mol_state_session.value( 'vmap_inspect_layout', next ) ?? super.layout_shown()
+		}
+
 		base_pick(): $mol_view_content {
 			return this.bases().length ? this.Base() : this.base_title()
 		}

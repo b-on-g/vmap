@@ -301,9 +301,38 @@ namespace $ {
 
 			const body = one.body()
 
-			$mol_assert_equal( body.includes( one.Flex() ), true )
+			$mol_assert_equal( body.includes( one.Layout() ), true )
 			$mol_assert_equal( body.includes( one.Rows() ), true )
 			$mol_assert_equal( body.includes( one.Inherited() ), true )
+			$mol_assert_equal( one.Layout().content().includes( one.Flex() ), true )
+
+		},
+
+		'the properties come first and the layout presets wait folded under their own name'( $ ) {
+
+			const one = panel( $, `${ d }my_card ${ d }mol_view\n\ttitle \\Hi\n` )
+
+			const body = one.body()
+
+			$mol_assert_equal( body[ 0 ], one.Rows() )
+			$mol_assert_equal( body.indexOf( one.Layout() ) > 0, true )
+			$mol_assert_equal( one.Layout().title(), 'Раскладка' )
+			$mol_assert_equal( one.layout_shown(), false )
+			$mol_assert_equal( one.Layout().rows().includes( one.Layout().Content() ), false )
+
+			one.layout_shown( true )
+
+			$mol_assert_equal( one.Layout().rows().includes( one.Layout().Content() ), true )
+			$mol_assert_equal( one.Layout().content().includes( one.Flex() ), true )
+			$mol_assert_equal( one.layout_shown(), true )
+
+			const again = panel( $, `${ d }my_card ${ d }mol_view\n\ttitle \\Hi\n` )
+
+			$mol_assert_equal( again.layout_shown(), true )
+
+			again.layout_shown( false )
+
+			$mol_assert_equal( panel( $, `${ d }my_card ${ d }mol_view\n` ).layout_shown(), false )
 
 		},
 

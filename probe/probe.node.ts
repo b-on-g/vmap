@@ -1159,6 +1159,41 @@ namespace $ {
 				}
 			`, 30000 ) as { width: number, cut: number, rows: number, keys: number[], spill: number[] }
 
+			const cold = await browser.evaluate( `
+				const panel = document.querySelector( '[bog_vmap_app_right]' )
+				const box = panel.getBoundingClientRect()
+
+				const first = document.querySelector( '[bog_vmap_app_inspect_row]' )
+				const top = first ? Math.round( first.getBoundingClientRect().top ) : -1
+				const bottom = first ? Math.round( first.getBoundingClientRect().bottom ) : -1
+
+				return {
+					ширина: Math.round( box.width ),
+					низ: Math.round( Math.min( box.bottom, innerHeight ) ),
+					верх_строки: top,
+					низ_строки: bottom,
+					записей: document.querySelectorAll( '[bog_vmap_app_inspect_value_item]' ).length,
+					прокручено: panel.querySelector( '[mol_scroll]' )?.scrollTop ?? 0,
+				}
+			`, 30000 ) as { ширина: number, низ: number, верх_строки: number, низ_строки: number, записей: number, прокручено: number }
+
+			must( cold.верх_строки >= 0, `${ at } в «Дизайне» нет ни одной строки свойства` )
+			must( cold.прокручено === 0, `${ at } панель уже прокручена на ${ cold.прокручено } px, замер без прокрутки не честен` )
+
+			want(
+				cold.верх_строки < cold.низ,
+				`${ at } первая строка свойства начинается за нижней кромкой при ширине ${ cold.ширина }:`
+					+ ` строка с ${ cold.верх_строки }, панель до ${ cold.низ }`,
+			)
+
+			want(
+				cold.записей > 0,
+				`${ at } без прокрутки при ширине ${ cold.ширина } не видно ни одной записи словаря`,
+			)
+
+			say( `${ at } без прокрутки при ширине ${ cold.ширина } первая строка свойства начинается на ${ cold.верх_строки }`
+				+ ` при нижней кромке ${ cold.низ }, записей словаря видно ${ cold.записей }` )
+
 			const reach = async ()=> await browser.evaluate( `
 				const app = ${ app }
 				const row = app.Inspect().rows().find( one => one.sign() === 'style' )

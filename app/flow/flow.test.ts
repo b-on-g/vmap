@@ -1120,6 +1120,7 @@ namespace $ {
 			stage.tap( inside( 200, 250 ) )
 			$mol_assert_equal( stage.app.selected(), 'Page' )
 
+			stage.click( stage.check( 'Раскладка' ) )
 			stage.click( stage.check( 'рядом' ) )
 
 			$mol_assert_ok( stage.app.doc_source().includes( 'flexDirection \\row' ) )
