@@ -739,6 +739,22 @@ namespace $ {
 
 		},
 
+		'a document still loading gives no guides and does not hold the canvas'( $ ) {
+			const waiting = new Promise( ()=> {} )
+
+			const app = $bog_vmap_app.make({
+				$,
+				store: ()=> $bog_vmap_app_store.make({
+					$,
+					doc_land_config: ()=> null,
+					guides: ()=> { throw waiting },
+				}),
+			}) as $$.$bog_vmap_app
+
+			$mol_assert_like( app.guides(), {} )
+
+		},
+
 		'a ready or a foreign document leaves the editor open'( $ ) {
 
 			for( const [ stage, note ] of [

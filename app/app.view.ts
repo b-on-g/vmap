@@ -164,7 +164,16 @@ namespace $.$$ {
 		}
 
 		override guides( next?: $bog_vmap_app_store_guides ): $bog_vmap_app_store_guides {
-			return this.store().guides( next )
+
+			if( next !== undefined ) return this.store().guides( next )
+
+			try {
+				return this.store().guides()
+			} catch( error ) {
+				if( $mol_promise_like( error ) ) return {}
+				return $mol_fail_hidden( error )
+			}
+
 		}
 
 		override links( next?: string ) {
