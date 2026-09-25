@@ -119,6 +119,7 @@ $bog_vmap_app_pane $mol_view
 		press? <=> node_press? null
 		move? <=> node_move? null
 		release? <=> node_release? null
+		lost? <=> node_lost? null
 		away? <=> node_away? null
 		context? <=> node_context? null
 	Wire $bog_vmap_app_wire
@@ -272,6 +273,7 @@ $bog_vmap_app_pane_overlay $mol_view
 	press? null
 	move? null
 	release? null
+	lost? null
 	away? null
 	context? null
 	event *
@@ -279,6 +281,8 @@ $bog_vmap_app_pane_overlay $mol_view
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
+		pointercancel? <=> release? null
+		lostpointercapture? <=> lost? null
 		pointerleave? <=> away? null
 		contextmenu? <=> context? null
 	Frame* $mol_view

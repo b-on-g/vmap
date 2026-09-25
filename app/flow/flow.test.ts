@@ -193,12 +193,30 @@ namespace $ {
 	function browser_gaps( $: $ ) {
 		const dom = $.$mol_dom_context
 
-		const proto = dom.Element.prototype
+		const proto = dom.Element.prototype as Element & { pointers_kept?: WeakMap< Element, Set< number > > }
 
-		if( !proto.setPointerCapture ) Object.assign( proto, {
-			setPointerCapture() {},
-			releasePointerCapture() {},
-			hasPointerCapture() { return false },
+		if( proto.pointers_kept ) return
+
+		const kept = new WeakMap< Element, Set< number > >()
+
+		Object.assign( proto, {
+
+			pointers_kept: kept,
+
+			setPointerCapture( this: Element, id: number ) {
+				const ids = kept.get( this ) ?? new Set< number >()
+				ids.add( id )
+				kept.set( this, ids )
+			},
+
+			releasePointerCapture( this: Element, id: number ) {
+				kept.get( this )?.delete( id )
+			},
+
+			hasPointerCapture( this: Element, id: number ) {
+				return kept.get( this )?.has( id ) ?? false
+			},
+
 		} )
 
 	}
@@ -592,6 +610,10 @@ namespace $ {
 
 			release( el: Element, point: readonly [ number, number ], over: object = {} ) {
 				el.dispatchEvent( pointer( 'pointerup', point, over ) )
+			},
+
+			lost( el: Element, point: readonly [ number, number ], over: object = {} ) {
+				el.dispatchEvent( pointer( 'lostpointercapture', point, { buttons: 0, ... over } ) )
 			},
 
 			drop( klass: string, point: readonly [ number, number ] ) {

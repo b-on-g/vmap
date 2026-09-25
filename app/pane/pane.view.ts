@@ -1110,7 +1110,13 @@ namespace $.$$ {
 		override guide_move( id: string, next?: PointerEvent | null ) {
 			const drag = this.guide_drag()
 			if( !drag || !next ) return null
-			if( !next.buttons ) return this.guide_release( id, next )
+
+			if( !next.buttons ) {
+				const node = next.target as Element | null
+				let kept = false
+				try { kept = node?.hasPointerCapture?.( next.pointerId ) ?? false } catch {}
+				if( !kept ) return this.guide_release( id, next )
+			}
 
 			next.preventDefault()
 
@@ -2132,6 +2138,17 @@ namespace $.$$ {
 
 		}
 
+		held( event: PointerEvent ) {
+			if( event.buttons ) return true
+
+			try {
+				return this.Overlay().dom_node().hasPointerCapture( event.pointerId )
+			} catch {
+				return false
+			}
+
+		}
+
 		press_track( event: PointerEvent ) {
 			const press = this.press()
 			if( !press || press.moved ) return
@@ -2322,7 +2339,7 @@ namespace $.$$ {
 
 			const sizing = this.sizing()
 			if( sizing ) {
-				if( !event.buttons ) return this.node_release( event )
+				if( !this.held( event ) ) return this.node_release( event )
 				event.preventDefault()
 				this.sizing({ ... sizing, to: this.world_point( event ), ratio: Boolean( event.shiftKey ) })
 				return
@@ -2330,14 +2347,14 @@ namespace $.$$ {
 
 			const draft = this.draft()
 			if( draft ) {
-				if( !event.buttons ) return this.node_release( event )
+				if( !this.held( event ) ) return this.node_release( event )
 				event.preventDefault()
 				this.draft({ from: draft.from, to: this.world_point( event ) })
 				return
 			}
 
 			if( this.wire_drag() ) {
-				if( !event.buttons ) return this.node_release( event )
+				if( !this.held( event ) ) return this.node_release( event )
 				event.preventDefault()
 				this.wire_point( this.screen_point( event ) )
 				this.wire_shift( event.shiftKey )
@@ -2346,7 +2363,7 @@ namespace $.$$ {
 
 			const band = this.band()
 			if( band ) {
-				if( !event.buttons ) return this.node_release( event )
+				if( !this.held( event ) ) return this.node_release( event )
 				event.preventDefault()
 				this.band({ from: band.from, to: this.world_point( event ) })
 				return
@@ -2355,7 +2372,7 @@ namespace $.$$ {
 			const drag = this.drag()
 			if( !drag ) return
 
-			if( !event.buttons ) return this.node_release( event )
+			if( !this.held( event ) ) return this.node_release( event )
 
 			event.preventDefault()
 
@@ -2390,6 +2407,13 @@ namespace $.$$ {
 
 			this.spots( next )
 
+		}
+
+		node_lost( event?: PointerEvent ) {
+			if( !event ) return
+			if( !this.sizing() && !this.draft() && !this.band() && !this.drag() && !this.wire_drag() ) return
+
+			this.node_release( event )
 		}
 
 		node_release( event?: PointerEvent ) {

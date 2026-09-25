@@ -5531,6 +5531,97 @@ namespace $ {
 
 		},
 
+		'a hand drawing a board in forty small steps keeps the whole drag, buttons reported or not'( $ ) {
+
+			for( const buttons of [ 1, 0 ] ) {
+
+				const stage = $bog_vmap_app_flow_stage( $ )
+				const pane = stage.pane
+				const overlay = stage.overlay()
+
+				pane.tool_board( true )
+
+				const steps = 40
+
+				stage.press( overlay, stage.client([ 40, 40 ]) )
+
+				for( let step = 1; step <= steps; ++ step ) {
+					stage.move( overlay, stage.client([ 40 + 480 * step / steps, 40 + 720 * step / steps ]), { buttons } )
+				}
+
+				stage.release( overlay, stage.client([ 520, 760 ]) )
+				stage.redraw()
+
+				const node = stage.app.node()
+				const style = node.over_tree( 'Page', 'style' )?.kids[ 0 ] ?? null
+				const styled = ( prop: string )=> $bog_vmap_lang_dict_get( style, prop )?.value ?? null
+
+				$mol_assert_like( node.part_names(), [ 'Page' ] )
+				$mol_assert_equal( styled( 'width' ), '480px' )
+				$mol_assert_equal( styled( 'minHeight' ), '720px' )
+
+			}
+
+		},
+
+		'a lost pointer capture ends the drag instead of hanging it'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+			const overlay = stage.overlay()
+
+			pane.tool_board( true )
+
+			stage.press( overlay, stage.client([ 40, 40 ]) )
+			stage.move( overlay, stage.client([ 520, 760 ]) )
+
+			$mol_assert_ok( pane.draft() )
+
+			stage.lost( overlay, stage.client([ 520, 760 ]) )
+			stage.redraw()
+
+			$mol_assert_equal( pane.draft(), null )
+			$mol_assert_like( stage.app.node().part_names(), [ 'Page' ] )
+
+		},
+
+		'a hand drawing a wire in dozens of small steps reaches the input'( $ ) {
+
+			for( const buttons of [ 1, 0 ] ) {
+
+				const stage = $bog_vmap_app_flow_stage( $ )
+				const overlay = stage.overlay()
+
+				stage.drop( calc, stage.client([ 100, 100 ]) )
+				stage.drop( map, stage.client([ 400, 100 ]) )
+
+				stage.tap( stage.part_center( 'Calc' ) )
+
+				const from = stage.port_dot( 'Calc', 'result', 'out' )
+				const to = stage.port_dot( 'Map', 'zoom', 'in' )
+				const steps = 30
+
+				stage.press( overlay, from )
+
+				for( let step = 1; step <= steps; ++ step ) {
+					stage.move( overlay, [
+						from[ 0 ] + ( to[ 0 ] - from[ 0 ] ) * step / steps,
+						from[ 1 ] + ( to[ 1 ] - from[ 1 ] ) * step / steps,
+					], { buttons } )
+				}
+
+				$mol_assert_like( stage.pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' } )
+
+				stage.release( overlay, to )
+				stage.redraw()
+				stage.scene.flush()
+
+				$mol_assert_like( stage.app.doc_wires().map( link => `${ link.to }.${ link.to_prop }` ), [ 'Map.zoom' ] )
+
+			}
+
+		},
+
 		'the rulers show round marks, hide on a small pane and move their zero inside a node'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
