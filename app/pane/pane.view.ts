@@ -64,6 +64,8 @@ namespace $.$$ {
 		readonly y: number
 		readonly width: number
 		readonly text: string
+		readonly owner: string
+		readonly index: number
 	}
 
 	export type $bog_vmap_app_pane_camera_kept = {
@@ -2282,7 +2284,18 @@ namespace $.$$ {
 			this.text_spot( null )
 			this.text_new( '' )
 
-			if( text ) this.text_draw({ x: spot.x, y: spot.y, width: spot.width, text })
+			if( !text ) return null
+
+			const slot = this.insert_slot([ spot.x, spot.y ])
+
+			this.text_draw({
+				x: spot.x,
+				y: spot.y,
+				width: spot.width,
+				text,
+				owner: slot?.owner ?? '',
+				index: slot?.index ?? -1,
+			})
 
 			return null
 		}

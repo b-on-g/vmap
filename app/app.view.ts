@@ -1921,10 +1921,15 @@ namespace $.$$ {
 				] ),
 			] ) )
 
-			node.sub_add( name )
+			if( next.owner ) node.sub_insert( name, next.index, next.owner )
+			else node.sub_add( name )
 
 			this.node().tree( node.tree() )
-			this.spots({ ... this.spots(), [ name ]: { x: Math.round( next.x ), y: Math.round( next.y ) } })
+
+			if( !next.owner ) {
+				this.spots({ ... this.spots(), [ name ]: { x: Math.round( next.x ), y: Math.round( next.y ) } })
+			}
+
 			this.picked([ name ])
 
 			return name

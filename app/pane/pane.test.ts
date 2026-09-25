@@ -5056,6 +5056,45 @@ namespace $ {
 
 		},
 
+		'a text and a part put in the same place get the same holder'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+
+			stage.app.board_draw({ x: 0, y: 0, width: 400, height: 300 })
+			stage.redraw()
+			stage.scene.flush()
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Calc' ] )
+
+			pane.tool_text( true )
+			stage.tap( stage.client([ 100, 200 ]) )
+			pane.text_new( 'Привет' )
+			pane.text_new_submit()
+			stage.redraw()
+
+			$mol_assert_like( stage.app.node().sub_names( 'Page' ), [ 'Calc', 'Text' ] )
+			$mol_assert_equal( stage.app.spots()[ 'Text' ], undefined )
+			$mol_assert_equal( ( stage.app.node().sub_names() ?? [] ).includes( 'Text' ), false )
+
+		},
+
+		'a text on bare canvas stays a free node with a spot of its own'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+
+			pane.tool_text( true )
+			stage.tap( stage.client([ 300, 200 ]) )
+			pane.text_new( 'Привет' )
+			pane.text_new_submit()
+			stage.redraw()
+
+			$mol_assert_like( stage.app.node().part_names(), [ 'Text' ] )
+			$mol_assert_ok( stage.app.spots()[ 'Text' ] )
+
+		},
+
 		'a guide pulled off the ruler reaches the document only on release'( $ ) {
 			const pane = pane_make( $, { A: box( 0, 0 ) } )
 
