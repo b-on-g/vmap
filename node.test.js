@@ -24085,8 +24085,15 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		lacking(){
+			return false;
+		}
 		attr(){
-			return {...(super.attr()), "bog_vmap_app_palette_item_current": (this.current())};
+			return {
+				...(super.attr()), 
+				"bog_vmap_app_palette_item_current": (this.current()), 
+				"bog_vmap_app_palette_item_lacking": (this.lacking())
+			};
 		}
 		event(){
 			return {...(super.event()), "pointerdown": (next) => (this.drag_start(next))};
@@ -25849,6 +25856,16 @@ var $;
 			if(next !== undefined) return next;
 			return true;
 		}
+		Pack_state(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.pack_state_note()));
+			return obj;
+		}
+		Place_note(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.place_note()));
+			return obj;
+		}
 		item_rows(){
 			return [];
 		}
@@ -25856,6 +25873,13 @@ var $;
 			const obj = new this.$.$mol_list();
 			(obj.rows) = () => ((this.item_rows()));
 			return obj;
+		}
+		parts_content(){
+			return [
+				(this.Pack_state()), 
+				(this.Place_note()), 
+				(this.Items())
+			];
 		}
 		apps_title(){
 			return "";
@@ -25889,6 +25913,9 @@ var $;
 		}
 		item_hint(id){
 			return "";
+		}
+		item_lacking(id){
+			return false;
 		}
 		item_click(id, next){
 			if(next !== undefined) return next;
@@ -25974,11 +26001,18 @@ var $;
 			(obj.content) = () => ((this.source_content()));
 			return obj;
 		}
+		pack_state_note(){
+			return "";
+		}
+		place_note(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		Parts(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Готовые детали");
 			(obj.expanded) = (next) => ((this.parts_expanded(next)));
-			(obj.content) = () => ([(this.Items())]);
+			(obj.content) = () => ((this.parts_content()));
 			return obj;
 		}
 		Apps(){
@@ -26016,6 +26050,7 @@ var $;
 			const obj = new this.$.$bog_vmap_app_palette_item();
 			(obj.title) = () => ((this.item_title(id)));
 			(obj.hint) = () => ((this.item_hint(id)));
+			(obj.lacking) = () => ((this.item_lacking(id)));
 			(obj.click) = (next) => ((this.item_click(id, next)));
 			(obj.drag_start) = (next) => ((this.item_drag(id, next)));
 			return obj;
@@ -26030,6 +26065,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_open"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_field"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "parts_expanded"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Pack_state"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Place_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "pack_click"));
@@ -26045,6 +26082,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "filter"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Source"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "place_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Parts"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "Pack_row"));
@@ -26421,22 +26459,58 @@ var $;
             pack_classes() {
                 return this.Palette().Lib().class_list();
             }
-            pack_known() {
+            pack_state() {
                 if (!this.pack_link())
-                    return null;
+                    return { known: null, note: '' };
                 try {
-                    return new Set(this.pack_classes());
+                    return { known: new Set(this.pack_classes()), note: '' };
                 }
-                catch {
-                    return null;
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return {
+                            known: null,
+                            note: 'Дерево пака деталей ещё идёт, список пока неполон',
+                        };
+                    return {
+                        known: null,
+                        note: this.$.$bog_vmap_lib_pack_note(this.pack_tree_link(), error),
+                    };
                 }
             }
+            pack_known() {
+                return this.pack_state().known;
+            }
+            pack_state_note() {
+                return this.pack_state().note;
+            }
             items() {
-                const presets = this.$.$bog_vmap_app_shelf_presets();
+                return this.$.$bog_vmap_app_shelf_presets();
+            }
+            item_lacks(id) {
                 const known = this.pack_known();
                 if (!known)
-                    return presets;
-                return presets.filter(item => this.$.$bog_vmap_app_shelf_needs(item.source).every(name => known.has(name)));
+                    return [];
+                const source = this.item(id)?.source ?? '';
+                if (!source)
+                    return [];
+                return this.$.$bog_vmap_app_shelf_needs(source).filter(name => !known.has(name));
+            }
+            item_lacking(id) {
+                return this.item_lacks(id).length > 0;
+            }
+            parts_content() {
+                return [
+                    ...this.pack_state_note() ? [this.Pack_state()] : [],
+                    ...this.place_note() ? [this.Place_note()] : [],
+                    this.Items(),
+                ];
+            }
+            refuse(id) {
+                const lacks = this.item_lacks(id);
+                if (!lacks.length)
+                    return false;
+                this.place_note(`Деталь «${this.item_title(id)}» не положить: в паке нет ${lacks.join(', ')}`);
+                return true;
             }
             items_shown() {
                 return this.items().filter(item => this.$.$bog_vmap_app_shelf_match(this.filter(), item.title, item.hint));
@@ -26475,7 +26549,9 @@ var $;
                 return this.item(id)?.title ?? id;
             }
             item_hint(id) {
-                return this.item(id)?.hint ?? '';
+                const hint = this.item(id)?.hint ?? '';
+                const lacks = this.item_lacks(id);
+                return lacks.length ? `${hint} — не положить, в паке нет ${lacks.join(', ')}` : hint;
             }
             item_source(id) {
                 return this.item(id)?.source ?? '';
@@ -26489,13 +26565,20 @@ var $;
             item_drag(id, event) {
                 if (!event)
                     return;
+                if (this.refuse(id))
+                    return;
+                this.place_note('');
                 this.drag_x(event.clientX);
                 this.drag_y(event.clientY);
                 this.dragged(id);
             }
             item_click(id, event) {
-                if (this.editable())
-                    this.place(id);
+                if (!this.editable())
+                    return;
+                if (this.refuse(id))
+                    return;
+                this.place_note('');
+                this.place(id);
             }
             source_content() {
                 const content = super.source_content();
@@ -26518,7 +26601,7 @@ var $;
         ], $bog_vmap_app_shelf.prototype, "app_state", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_shelf.prototype, "pack_known", null);
+        ], $bog_vmap_app_shelf.prototype, "pack_state", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
@@ -36259,6 +36342,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_lost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		node_away(next){
 			if(next !== undefined) return next;
 			return null;
@@ -36795,6 +36882,7 @@ var $;
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.lost) = (next) => ((this.node_lost(next)));
 			(obj.away) = (next) => ((this.node_away(next)));
 			(obj.context) = (next) => ((this.node_context(next)));
 			return obj;
@@ -36998,6 +37086,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_lost"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_context"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
@@ -37129,6 +37218,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		lost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		away(next){
 			if(next !== undefined) return next;
 			return null;
@@ -37195,6 +37288,8 @@ var $;
 				"pointerdown": (next) => (this.press(next)), 
 				"pointermove": (next) => (this.move(next)), 
 				"pointerup": (next) => (this.release(next)), 
+				"pointercancel": (next) => (this.release(next)), 
+				"lostpointercapture": (next) => (this.lost(next)), 
 				"pointerleave": (next) => (this.away(next)), 
 				"contextmenu": (next) => (this.context(next))
 			};
@@ -37223,6 +37318,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "release"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "lost"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "away"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "context"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_nw"));
@@ -38146,8 +38242,16 @@ var $;
                 const drag = this.guide_drag();
                 if (!drag || !next)
                     return null;
-                if (!next.buttons)
-                    return this.guide_release(id, next);
+                if (!next.buttons) {
+                    const node = next.target;
+                    let kept = false;
+                    try {
+                        kept = node?.hasPointerCapture?.(next.pointerId) ?? false;
+                    }
+                    catch { }
+                    if (!kept)
+                        return this.guide_release(id, next);
+                }
                 next.preventDefault();
                 this.guide_drag({
                     ...drag,
@@ -38981,6 +39085,16 @@ var $;
                 }
                 catch { }
             }
+            held(event) {
+                if (event.buttons)
+                    return true;
+                try {
+                    return this.Overlay().dom_node().hasPointerCapture(event.pointerId);
+                }
+                catch {
+                    return false;
+                }
+            }
             press_track(event) {
                 const press = this.press();
                 if (!press || press.moved)
@@ -39122,7 +39236,7 @@ var $;
                 this.hover_track(event);
                 const sizing = this.sizing();
                 if (sizing) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.sizing({ ...sizing, to: this.world_point(event), ratio: Boolean(event.shiftKey) });
@@ -39130,14 +39244,14 @@ var $;
                 }
                 const draft = this.draft();
                 if (draft) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.draft({ from: draft.from, to: this.world_point(event) });
                     return;
                 }
                 if (this.wire_drag()) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.wire_point(this.screen_point(event));
@@ -39146,7 +39260,7 @@ var $;
                 }
                 const band = this.band();
                 if (band) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.band({ from: band.from, to: this.world_point(event) });
@@ -39155,7 +39269,7 @@ var $;
                 const drag = this.drag();
                 if (!drag)
                     return;
-                if (!event.buttons)
+                if (!this.held(event))
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
@@ -39179,6 +39293,13 @@ var $;
                     };
                 }
                 this.spots(next);
+            }
+            node_lost(event) {
+                if (!event)
+                    return;
+                if (!this.sizing() && !this.draft() && !this.band() && !this.drag() && !this.wire_drag())
+                    return;
+                this.node_release(event);
             }
             node_release(event) {
                 if (!event)
@@ -57830,6 +57951,80 @@ var $;
             $mol_assert_equal(spot.x, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[0]);
             $mol_assert_equal(spot.y, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[1]);
         },
+        'a hand drawing a board in forty small steps keeps the whole drag, buttons reported or not'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const pane = stage.pane;
+                const overlay = stage.overlay();
+                pane.tool_board(true);
+                const steps = 40;
+                stage.press(overlay, stage.client([40, 40]));
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, stage.client([40 + 480 * step / steps, 40 + 720 * step / steps]), { buttons });
+                }
+                stage.release(overlay, stage.client([520, 760]));
+                stage.redraw();
+                const node = stage.app.node();
+                const style = node.over_tree('Page', 'style')?.kids[0] ?? null;
+                const styled = (prop) => $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+                $mol_assert_like(node.part_names(), ['Page']);
+                $mol_assert_equal(styled('width'), '480px');
+                $mol_assert_equal(styled('minHeight'), '720px');
+            }
+        },
+        'a text field drawn in small steps keeps the width of the whole drag'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const pane = stage.pane;
+                const overlay = stage.overlay();
+                pane.tool_text(true);
+                const steps = 30;
+                stage.press(overlay, stage.client([40, 40]));
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, stage.client([40 + 300 * step / steps, 40 + 60 * step / steps]), { buttons });
+                }
+                stage.release(overlay, stage.client([340, 100]));
+                stage.redraw();
+                $mol_assert_equal(pane.text_spot()?.width, 300);
+            }
+        },
+        'a lost pointer capture ends the drag instead of hanging it'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const overlay = stage.overlay();
+            pane.tool_board(true);
+            stage.press(overlay, stage.client([40, 40]));
+            stage.move(overlay, stage.client([520, 760]));
+            $mol_assert_ok(pane.draft());
+            stage.lost(overlay, stage.client([520, 760]));
+            stage.redraw();
+            $mol_assert_equal(pane.draft(), null);
+            $mol_assert_like(stage.app.node().part_names(), ['Page']);
+        },
+        'a hand drawing a wire in dozens of small steps reaches the input'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const overlay = stage.overlay();
+                stage.drop(calc, stage.client([100, 100]));
+                stage.drop(map, stage.client([400, 100]));
+                stage.tap(stage.part_center('Calc'));
+                const from = stage.port_dot('Calc', 'result', 'out');
+                const to = stage.port_dot('Map', 'zoom', 'in');
+                const steps = 30;
+                stage.press(overlay, from);
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, [
+                        from[0] + (to[0] - from[0]) * step / steps,
+                        from[1] + (to[1] - from[1]) * step / steps,
+                    ], { buttons });
+                }
+                $mol_assert_like(stage.pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
+                stage.release(overlay, to);
+                stage.redraw();
+                stage.scene.flush();
+                $mol_assert_like(stage.app.doc_wires().map(link => `${link.to}.${link.to_prop}`), ['Map.zoom']);
+            }
+        },
         'the rulers show round marks, hide on a small pane and move their zero inside a node'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const pane = stage.pane;
@@ -60029,25 +60224,58 @@ var $;
             $mol_assert_ok(parts().includes('block'));
             $mol_assert_equal(apps().length, 3);
         },
-        'the shelf is cut down to what the pack at hand can build'($) {
+        'what the pack cannot build stays on the shelf, marked and named'($) {
             const shelf = (classes) => shelf_make($, {
                 pack_link: () => 'https://pack.test/',
                 pack_classes: () => classes,
             });
             const ids = (one) => one.items().map(item => item.id);
-            const rich = ids(shelf([
+            const rich = shelf([
                 `${d}mol_view`, `${d}mol_string`, `${d}mol_number`,
                 `${d}bog_vmap_part_calc`, `${d}bog_vmap_part_map`,
-            ]));
-            const poor = ids(shelf([`${d}mol_view`, `${d}mol_string`]));
-            $mol_assert_equal(rich.includes('calc'), true);
-            $mol_assert_equal(rich.includes('pair'), true);
-            $mol_assert_equal(rich.includes('input_number'), true);
-            $mol_assert_equal(poor.includes('calc'), false);
-            $mol_assert_equal(poor.includes('pair'), false);
-            $mol_assert_equal(poor.includes('input_number'), false);
-            $mol_assert_equal(poor.includes('block'), true);
-            $mol_assert_equal(poor.includes('input_string'), true);
+            ]);
+            const poor = shelf([`${d}mol_view`, `${d}mol_string`]);
+            $mol_assert_equal(ids(rich).length, ids(poor).length);
+            $mol_assert_equal(ids(poor).includes('calc'), true);
+            $mol_assert_equal(rich.item_lacking('calc'), false);
+            $mol_assert_equal(rich.item_lacking('input_number'), false);
+            $mol_assert_equal(poor.item_lacking('calc'), true);
+            $mol_assert_equal(poor.item_lacking('pair'), true);
+            $mol_assert_equal(poor.item_lacking('input_number'), true);
+            $mol_assert_equal(poor.item_lacking('block'), false);
+            $mol_assert_equal(poor.item_lacking('input_string'), false);
+            $mol_assert_like(poor.item_lacks('calc'), [`${d}bog_vmap_part_calc`]);
+            $mol_assert_ok(poor.item_hint('calc').includes(`в паке нет ${d}bog_vmap_part_calc`));
+        },
+        'a part the pack cannot build is refused by words and never starts a drag'($) {
+            const one = shelf_make($, {
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => [`${d}mol_view`, `${d}mol_string`],
+            });
+            let placed = '';
+            one.place = (next) => { placed = next ?? ''; return ''; };
+            one.item_click('calc', null);
+            $mol_assert_equal(placed, '');
+            $mol_assert_ok(one.place_note().includes('не положить'));
+            $mol_assert_ok(one.place_note().includes(`${d}bog_vmap_part_calc`));
+            $mol_assert_ok(one.parts_content().includes(one.Place_note()));
+            one.item_drag('calc', { clientX: 10, clientY: 20 });
+            $mol_assert_equal(one.dragged(), '');
+            one.item_click('block', null);
+            $mol_assert_equal(placed, 'block');
+            $mol_assert_equal(one.place_note(), '');
+        },
+        'while the pack tree is on the way the shelf says the list is not complete'($) {
+            const one = shelf_make($, {
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => $mol_fail_hidden(new Promise(() => { })),
+            });
+            $mol_assert_ok(one.pack_state_note().includes('ещё идёт'));
+            $mol_assert_ok(one.pack_state_note().includes('неполон'));
+            $mol_assert_equal(one.pack_known(), null);
+            $mol_assert_equal(one.item_lacking('calc'), false);
+            $mol_assert_equal(one.items().length, $bog_vmap_app_shelf_presets().length);
+            $mol_assert_ok(one.parts_content().includes(one.Pack_state()));
         },
         'until the pack answers the shelf keeps offering everything'($) {
             const shelf = shelf_make($, {
@@ -60446,12 +60674,23 @@ var $;
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
         const proto = dom.Element.prototype;
-        if (!proto.setPointerCapture)
-            Object.assign(proto, {
-                setPointerCapture() { },
-                releasePointerCapture() { },
-                hasPointerCapture() { return false; },
-            });
+        if (proto.pointers_kept)
+            return;
+        const kept = new WeakMap();
+        Object.assign(proto, {
+            pointers_kept: kept,
+            setPointerCapture(id) {
+                const ids = kept.get(this) ?? new Set();
+                ids.add(id);
+                kept.set(this, ids);
+            },
+            releasePointerCapture(id) {
+                kept.get(this)?.delete(id);
+            },
+            hasPointerCapture(id) {
+                return kept.get(this)?.has(id) ?? false;
+            },
+        });
     }
     let $bog_vmap_app_flow_last = null;
     let $bog_vmap_app_flow_host = null;
@@ -60771,6 +61010,9 @@ var $;
             },
             release(el, point, over = {}) {
                 el.dispatchEvent(pointer('pointerup', point, over));
+            },
+            lost(el, point, over = {}) {
+                el.dispatchEvent(pointer('lostpointercapture', point, { buttons: 0, ...over }));
             },
             drop(klass, point) {
                 this.classes_open();

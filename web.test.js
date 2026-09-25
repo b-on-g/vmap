@@ -16416,6 +16416,80 @@ var $;
             $mol_assert_equal(spot.x, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[0]);
             $mol_assert_equal(spot.y, stage.pane.world_point({ clientX: stage.client([40, 40])[0], clientY: stage.client([40, 40])[1] })[1]);
         },
+        'a hand drawing a board in forty small steps keeps the whole drag, buttons reported or not'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const pane = stage.pane;
+                const overlay = stage.overlay();
+                pane.tool_board(true);
+                const steps = 40;
+                stage.press(overlay, stage.client([40, 40]));
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, stage.client([40 + 480 * step / steps, 40 + 720 * step / steps]), { buttons });
+                }
+                stage.release(overlay, stage.client([520, 760]));
+                stage.redraw();
+                const node = stage.app.node();
+                const style = node.over_tree('Page', 'style')?.kids[0] ?? null;
+                const styled = (prop) => $bog_vmap_lang_dict_get(style, prop)?.value ?? null;
+                $mol_assert_like(node.part_names(), ['Page']);
+                $mol_assert_equal(styled('width'), '480px');
+                $mol_assert_equal(styled('minHeight'), '720px');
+            }
+        },
+        'a text field drawn in small steps keeps the width of the whole drag'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const pane = stage.pane;
+                const overlay = stage.overlay();
+                pane.tool_text(true);
+                const steps = 30;
+                stage.press(overlay, stage.client([40, 40]));
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, stage.client([40 + 300 * step / steps, 40 + 60 * step / steps]), { buttons });
+                }
+                stage.release(overlay, stage.client([340, 100]));
+                stage.redraw();
+                $mol_assert_equal(pane.text_spot()?.width, 300);
+            }
+        },
+        'a lost pointer capture ends the drag instead of hanging it'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const overlay = stage.overlay();
+            pane.tool_board(true);
+            stage.press(overlay, stage.client([40, 40]));
+            stage.move(overlay, stage.client([520, 760]));
+            $mol_assert_ok(pane.draft());
+            stage.lost(overlay, stage.client([520, 760]));
+            stage.redraw();
+            $mol_assert_equal(pane.draft(), null);
+            $mol_assert_like(stage.app.node().part_names(), ['Page']);
+        },
+        'a hand drawing a wire in dozens of small steps reaches the input'($) {
+            for (const buttons of [1, 0]) {
+                const stage = $bog_vmap_app_flow_stage($);
+                const overlay = stage.overlay();
+                stage.drop(calc, stage.client([100, 100]));
+                stage.drop(map, stage.client([400, 100]));
+                stage.tap(stage.part_center('Calc'));
+                const from = stage.port_dot('Calc', 'result', 'out');
+                const to = stage.port_dot('Map', 'zoom', 'in');
+                const steps = 30;
+                stage.press(overlay, from);
+                for (let step = 1; step <= steps; ++step) {
+                    stage.move(overlay, [
+                        from[0] + (to[0] - from[0]) * step / steps,
+                        from[1] + (to[1] - from[1]) * step / steps,
+                    ], { buttons });
+                }
+                $mol_assert_like(stage.pane.wire_drag(), { from: 'Calc', from_prop: 'result', kind: 'number' });
+                stage.release(overlay, to);
+                stage.redraw();
+                stage.scene.flush();
+                $mol_assert_like(stage.app.doc_wires().map(link => `${link.to}.${link.to_prop}`), ['Map.zoom']);
+            }
+        },
         'the rulers show round marks, hide on a small pane and move their zero inside a node'($) {
             const stage = $bog_vmap_app_flow_stage($);
             const pane = stage.pane;
@@ -18522,25 +18596,58 @@ var $;
             $mol_assert_ok(parts().includes('block'));
             $mol_assert_equal(apps().length, 3);
         },
-        'the shelf is cut down to what the pack at hand can build'($) {
+        'what the pack cannot build stays on the shelf, marked and named'($) {
             const shelf = (classes) => shelf_make($, {
                 pack_link: () => 'https://pack.test/',
                 pack_classes: () => classes,
             });
             const ids = (one) => one.items().map(item => item.id);
-            const rich = ids(shelf([
+            const rich = shelf([
                 `${d}mol_view`, `${d}mol_string`, `${d}mol_number`,
                 `${d}bog_vmap_part_calc`, `${d}bog_vmap_part_map`,
-            ]));
-            const poor = ids(shelf([`${d}mol_view`, `${d}mol_string`]));
-            $mol_assert_equal(rich.includes('calc'), true);
-            $mol_assert_equal(rich.includes('pair'), true);
-            $mol_assert_equal(rich.includes('input_number'), true);
-            $mol_assert_equal(poor.includes('calc'), false);
-            $mol_assert_equal(poor.includes('pair'), false);
-            $mol_assert_equal(poor.includes('input_number'), false);
-            $mol_assert_equal(poor.includes('block'), true);
-            $mol_assert_equal(poor.includes('input_string'), true);
+            ]);
+            const poor = shelf([`${d}mol_view`, `${d}mol_string`]);
+            $mol_assert_equal(ids(rich).length, ids(poor).length);
+            $mol_assert_equal(ids(poor).includes('calc'), true);
+            $mol_assert_equal(rich.item_lacking('calc'), false);
+            $mol_assert_equal(rich.item_lacking('input_number'), false);
+            $mol_assert_equal(poor.item_lacking('calc'), true);
+            $mol_assert_equal(poor.item_lacking('pair'), true);
+            $mol_assert_equal(poor.item_lacking('input_number'), true);
+            $mol_assert_equal(poor.item_lacking('block'), false);
+            $mol_assert_equal(poor.item_lacking('input_string'), false);
+            $mol_assert_like(poor.item_lacks('calc'), [`${d}bog_vmap_part_calc`]);
+            $mol_assert_ok(poor.item_hint('calc').includes(`в паке нет ${d}bog_vmap_part_calc`));
+        },
+        'a part the pack cannot build is refused by words and never starts a drag'($) {
+            const one = shelf_make($, {
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => [`${d}mol_view`, `${d}mol_string`],
+            });
+            let placed = '';
+            one.place = (next) => { placed = next ?? ''; return ''; };
+            one.item_click('calc', null);
+            $mol_assert_equal(placed, '');
+            $mol_assert_ok(one.place_note().includes('не положить'));
+            $mol_assert_ok(one.place_note().includes(`${d}bog_vmap_part_calc`));
+            $mol_assert_ok(one.parts_content().includes(one.Place_note()));
+            one.item_drag('calc', { clientX: 10, clientY: 20 });
+            $mol_assert_equal(one.dragged(), '');
+            one.item_click('block', null);
+            $mol_assert_equal(placed, 'block');
+            $mol_assert_equal(one.place_note(), '');
+        },
+        'while the pack tree is on the way the shelf says the list is not complete'($) {
+            const one = shelf_make($, {
+                pack_link: () => 'https://pack.test/',
+                pack_classes: () => $mol_fail_hidden(new Promise(() => { })),
+            });
+            $mol_assert_ok(one.pack_state_note().includes('ещё идёт'));
+            $mol_assert_ok(one.pack_state_note().includes('неполон'));
+            $mol_assert_equal(one.pack_known(), null);
+            $mol_assert_equal(one.item_lacking('calc'), false);
+            $mol_assert_equal(one.items().length, $bog_vmap_app_shelf_presets().length);
+            $mol_assert_ok(one.parts_content().includes(one.Pack_state()));
         },
         'until the pack answers the shelf keeps offering everything'($) {
             const shelf = shelf_make($, {
@@ -18939,12 +19046,23 @@ var $;
     function browser_gaps($) {
         const dom = $.$mol_dom_context;
         const proto = dom.Element.prototype;
-        if (!proto.setPointerCapture)
-            Object.assign(proto, {
-                setPointerCapture() { },
-                releasePointerCapture() { },
-                hasPointerCapture() { return false; },
-            });
+        if (proto.pointers_kept)
+            return;
+        const kept = new WeakMap();
+        Object.assign(proto, {
+            pointers_kept: kept,
+            setPointerCapture(id) {
+                const ids = kept.get(this) ?? new Set();
+                ids.add(id);
+                kept.set(this, ids);
+            },
+            releasePointerCapture(id) {
+                kept.get(this)?.delete(id);
+            },
+            hasPointerCapture(id) {
+                return kept.get(this)?.has(id) ?? false;
+            },
+        });
     }
     let $bog_vmap_app_flow_last = null;
     let $bog_vmap_app_flow_host = null;
@@ -19264,6 +19382,9 @@ var $;
             },
             release(el, point, over = {}) {
                 el.dispatchEvent(pointer('pointerup', point, over));
+            },
+            lost(el, point, over = {}) {
+                el.dispatchEvent(pointer('lostpointercapture', point, { buttons: 0, ...over }));
             },
             drop(klass, point) {
                 this.classes_open();

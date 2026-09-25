@@ -46348,8 +46348,10 @@ declare namespace $ {
 		current( ): boolean
 		minimal_height( ): number
 		drag_start( next?: any ): any
+		lacking( ): boolean
 		attr( ): ({ 
 			'bog_vmap_app_palette_item_current': ReturnType< $bog_vmap_app_palette_item['current'] >,
+			'bog_vmap_app_palette_item_lacking': ReturnType< $bog_vmap_app_palette_item['lacking'] >,
 		})  & ReturnType< $mol_button_minor['attr'] >
 		event( ): ({ 
 			pointerdown( next?: ReturnType< $bog_vmap_app_palette_item['drag_start'] > ): ReturnType< $bog_vmap_app_palette_item['drag_start'] >,
@@ -47461,154 +47463,169 @@ declare namespace $ {
 		,
 		ReturnType< $mol_form_field['control'] >
 	>
-	type $mol_list__rows_bog_vmap_app_shelf_17 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_shelf_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['pack_state_note'] >
+		,
+		ReturnType< $mol_status['status'] >
+	>
+	type $mol_status__status_bog_vmap_app_shelf_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['place_note'] >
+		,
+		ReturnType< $mol_status['status'] >
+	>
+	type $mol_list__rows_bog_vmap_app_shelf_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $mol_list__rows_bog_vmap_app_shelf_18 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_shelf_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['app_rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $mol_check__title_bog_vmap_app_shelf_19 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_shelf_21 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_shelf_20 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_shelf_22 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_shelf_21 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_shelf_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['classes_showed'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_expander__title_bog_vmap_app_shelf_22 = $mol_type_enforce<
+	type $mol_expander__title_bog_vmap_app_shelf_24 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_expander['title'] >
 	>
-	type $mol_expander__expanded_bog_vmap_app_shelf_23 = $mol_type_enforce<
+	type $mol_expander__expanded_bog_vmap_app_shelf_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['source_expanded'] >
 		,
 		ReturnType< $mol_expander['expanded'] >
 	>
-	type $mol_expander__content_bog_vmap_app_shelf_24 = $mol_type_enforce<
+	type $mol_expander__content_bog_vmap_app_shelf_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['source_content'] >
 		,
 		ReturnType< $mol_expander['content'] >
 	>
-	type $mol_expander__title_bog_vmap_app_shelf_25 = $mol_type_enforce<
+	type $mol_expander__title_bog_vmap_app_shelf_27 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_expander['title'] >
 	>
-	type $mol_expander__expanded_bog_vmap_app_shelf_26 = $mol_type_enforce<
+	type $mol_expander__expanded_bog_vmap_app_shelf_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['parts_expanded'] >
 		,
 		ReturnType< $mol_expander['expanded'] >
 	>
-	type $mol_expander__content_bog_vmap_app_shelf_27 = $mol_type_enforce<
-		readonly(any)[]
+	type $mol_expander__content_bog_vmap_app_shelf_29 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['parts_content'] >
 		,
 		ReturnType< $mol_expander['content'] >
 	>
-	type $mol_form_field__name_bog_vmap_app_shelf_28 = $mol_type_enforce<
+	type $mol_form_field__name_bog_vmap_app_shelf_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['apps_title'] >
 		,
 		ReturnType< $mol_form_field['name'] >
 	>
-	type $mol_form_field__bids_bog_vmap_app_shelf_29 = $mol_type_enforce<
+	type $mol_form_field__bids_bog_vmap_app_shelf_31 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_form_field['bids'] >
 	>
-	type $mol_form_field__control_bog_vmap_app_shelf_30 = $mol_type_enforce<
+	type $mol_form_field__control_bog_vmap_app_shelf_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['App_list'] >
 		,
 		ReturnType< $mol_form_field['control'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_shelf_31 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_shelf_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_title'] >
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_shelf_32 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_shelf_34 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_hint'] >
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_shelf_33 = $mol_type_enforce<
+	type $mol_button_minor__enabled_bog_vmap_app_shelf_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['editable'] >
 		,
 		ReturnType< $mol_button_minor['enabled'] >
 	>
-	type $mol_button_minor__attr_bog_vmap_app_shelf_34 = $mol_type_enforce<
+	type $mol_button_minor__attr_bog_vmap_app_shelf_36 = $mol_type_enforce<
 		({ 
 			'bog_vmap_app_shelf_pack_current': ReturnType< $bog_vmap_app_shelf['pack_current'] >,
 		})  & ReturnType< $mol_button_minor['attr'] >
 		,
 		ReturnType< $mol_button_minor['attr'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_shelf_35 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_shelf_37 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_click'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $bog_vmap_app_palette__compact_bog_vmap_app_shelf_36 = $mol_type_enforce<
+	type $bog_vmap_app_palette__compact_bog_vmap_app_shelf_38 = $mol_type_enforce<
 		boolean
 		,
 		ReturnType< $bog_vmap_app_palette['compact'] >
 	>
-	type $bog_vmap_app_palette__pack_link_bog_vmap_app_shelf_37 = $mol_type_enforce<
+	type $bog_vmap_app_palette__pack_link_bog_vmap_app_shelf_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['pack_link'] >
 		,
 		ReturnType< $bog_vmap_app_palette['pack_link'] >
 	>
-	type $bog_vmap_app_palette__land_classes_bog_vmap_app_shelf_38 = $mol_type_enforce<
+	type $bog_vmap_app_palette__land_classes_bog_vmap_app_shelf_40 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['land_classes'] >
 		,
 		ReturnType< $bog_vmap_app_palette['land_classes'] >
 	>
-	type $bog_vmap_app_palette__query_bog_vmap_app_shelf_39 = $mol_type_enforce<
+	type $bog_vmap_app_palette__query_bog_vmap_app_shelf_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['filter'] >
 		,
 		ReturnType< $bog_vmap_app_palette['query'] >
 	>
-	type $bog_vmap_app_palette__dragged_bog_vmap_app_shelf_40 = $mol_type_enforce<
+	type $bog_vmap_app_palette__dragged_bog_vmap_app_shelf_42 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['dragged'] >
 		,
 		ReturnType< $bog_vmap_app_palette['dragged'] >
 	>
-	type $bog_vmap_app_palette__drag_x_bog_vmap_app_shelf_41 = $mol_type_enforce<
+	type $bog_vmap_app_palette__drag_x_bog_vmap_app_shelf_43 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['drag_x'] >
 		,
 		ReturnType< $bog_vmap_app_palette['drag_x'] >
 	>
-	type $bog_vmap_app_palette__drag_y_bog_vmap_app_shelf_42 = $mol_type_enforce<
+	type $bog_vmap_app_palette__drag_y_bog_vmap_app_shelf_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['drag_y'] >
 		,
 		ReturnType< $bog_vmap_app_palette['drag_y'] >
 	>
-	type $bog_vmap_app_palette_item__title_bog_vmap_app_shelf_43 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__title_bog_vmap_app_shelf_45 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_title'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['title'] >
 	>
-	type $bog_vmap_app_palette_item__hint_bog_vmap_app_shelf_44 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__hint_bog_vmap_app_shelf_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_hint'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['hint'] >
 	>
-	type $bog_vmap_app_palette_item__click_bog_vmap_app_shelf_45 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__lacking_bog_vmap_app_shelf_47 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_shelf['item_lacking'] >
+		,
+		ReturnType< $bog_vmap_app_palette_item['lacking'] >
+	>
+	type $bog_vmap_app_palette_item__click_bog_vmap_app_shelf_48 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_click'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['click'] >
 	>
-	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_shelf_46 = $mol_type_enforce<
+	type $bog_vmap_app_palette_item__drag_start_bog_vmap_app_shelf_49 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_shelf['item_drag'] >
 		,
 		ReturnType< $bog_vmap_app_palette_item['drag_start'] >
@@ -47626,8 +47643,11 @@ declare namespace $ {
 		Import_field( ): $mol_form_field
 		source_content( ): readonly(any)[]
 		parts_expanded( next?: boolean ): boolean
+		Pack_state( ): $mol_status
+		Place_note( ): $mol_status
 		item_rows( ): readonly(any)[]
 		Items( ): $mol_list
+		parts_content( ): readonly(any)[]
 		apps_title( ): string
 		app_error( ): string
 		app_rows( ): readonly(any)[]
@@ -47638,6 +47658,7 @@ declare namespace $ {
 		pack_click( id: any, next?: any ): any
 		item_title( id: any): string
 		item_hint( id: any): string
+		item_lacking( id: any): boolean
 		item_click( id: any, next?: any ): any
 		item_drag( id: any, next?: any ): any
 		links( next?: string ): string
@@ -47660,6 +47681,8 @@ declare namespace $ {
 		tools( ): readonly(any)[]
 		Level( ): $mol_check
 		Source( ): $mol_expander
+		pack_state_note( ): string
+		place_note( next?: string ): string
 		Parts( ): $mol_expander
 		Apps( ): $mol_form_field
 		Pack_row( id: any): $mol_button_minor
@@ -47702,8 +47725,17 @@ declare namespace $.$$ {
         apps_title(): "Приложение не отвечает" | "Объекты приложения" | "Приложение не подключено";
         shown(names: readonly string[]): string[];
         pack_classes(): readonly string[];
+        pack_state(): {
+            readonly known: ReadonlySet<string> | null;
+            readonly note: string;
+        };
         pack_known(): ReadonlySet<string> | null;
+        pack_state_note(): string;
         items(): readonly $bog_vmap_app_shelf_item[];
+        item_lacks(id: string): readonly string[];
+        item_lacking(id: string): boolean;
+        parts_content(): readonly $mol_view[];
+        refuse(id: string): boolean;
         items_shown(): $bog_vmap_app_shelf_item[];
         class_offers(): readonly {
             readonly klass: string;
@@ -52697,69 +52729,74 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_pane_overlay['release'] >
 	>
-	type $bog_vmap_app_pane_overlay__away_bog_vmap_app_pane_15 = $mol_type_enforce<
+	type $bog_vmap_app_pane_overlay__lost_bog_vmap_app_pane_15 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_pane['node_lost'] >
+		,
+		ReturnType< $bog_vmap_app_pane_overlay['lost'] >
+	>
+	type $bog_vmap_app_pane_overlay__away_bog_vmap_app_pane_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_away'] >
 		,
 		ReturnType< $bog_vmap_app_pane_overlay['away'] >
 	>
-	type $bog_vmap_app_pane_overlay__context_bog_vmap_app_pane_16 = $mol_type_enforce<
+	type $bog_vmap_app_pane_overlay__context_bog_vmap_app_pane_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_context'] >
 		,
 		ReturnType< $bog_vmap_app_pane_overlay['context'] >
 	>
-	type $bog_vmap_app_wire__lines_bog_vmap_app_pane_17 = $mol_type_enforce<
+	type $bog_vmap_app_wire__lines_bog_vmap_app_pane_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['wire_lines'] >
 		,
 		ReturnType< $bog_vmap_app_wire['lines'] >
 	>
-	type $bog_vmap_app_wire__dots_bog_vmap_app_pane_18 = $mol_type_enforce<
+	type $bog_vmap_app_wire__dots_bog_vmap_app_pane_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['wire_dots'] >
 		,
 		ReturnType< $bog_vmap_app_wire['dots'] >
 	>
-	type $bog_vmap_app_wire__drag_geometry_bog_vmap_app_pane_19 = $mol_type_enforce<
+	type $bog_vmap_app_wire__drag_geometry_bog_vmap_app_pane_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['wire_drag_geometry'] >
 		,
 		ReturnType< $bog_vmap_app_wire['drag_geometry'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_20 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_21 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['value_labels'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_21 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['name_views'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_22 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['error_marks'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $bog_vmap_app_pane_label__style_bog_vmap_app_pane_23 = $mol_type_enforce<
+	type $bog_vmap_app_pane_label__style_bog_vmap_app_pane_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['label_style'] >
 		,
 		ReturnType< $bog_vmap_app_pane_label['style'] >
 	>
-	type $bog_vmap_app_pane_label__lines_bog_vmap_app_pane_24 = $mol_type_enforce<
+	type $bog_vmap_app_pane_label__lines_bog_vmap_app_pane_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['label_lines'] >
 		,
 		ReturnType< $bog_vmap_app_pane_label['lines'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_25 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['name_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_26 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_27 = $mol_type_enforce<
 		({ 
 			'bog_vmap_app_pane_name_picked': ReturnType< $bog_vmap_app_pane['name_picked'] >,
 		})  & ReturnType< $mol_view['attr'] >
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__event_bog_vmap_app_pane_27 = $mol_type_enforce<
+	type $mol_view__event_bog_vmap_app_pane_28 = $mol_type_enforce<
 		({ 
 			click( next?: ReturnType< $bog_vmap_app_pane['name_press'] > ): ReturnType< $bog_vmap_app_pane['name_press'] >,
 			dblclick( next?: ReturnType< $bog_vmap_app_pane['name_edit'] > ): ReturnType< $bog_vmap_app_pane['name_edit'] >,
@@ -52767,32 +52804,32 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['event'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_28 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_29 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_string__style_bog_vmap_app_pane_29 = $mol_type_enforce<
+	type $mol_string__style_bog_vmap_app_pane_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['name_style'] >
 		,
 		ReturnType< $mol_string['style'] >
 	>
-	type $mol_string__hint_bog_vmap_app_pane_30 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_pane_31 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_pane_31 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_pane_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['name_draft'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_string__submit_bog_vmap_app_pane_32 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_pane_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['name_submit'] >
 		,
 		ReturnType< $mol_string['submit'] >
 	>
-	type $mol_string__event_bog_vmap_app_pane_33 = $mol_type_enforce<
+	type $mol_string__event_bog_vmap_app_pane_34 = $mol_type_enforce<
 		({ 
 			blur( next?: ReturnType< $bog_vmap_app_pane['name_submit'] > ): ReturnType< $bog_vmap_app_pane['name_submit'] >,
 			keydown( next?: ReturnType< $bog_vmap_app_pane['name_key'] > ): ReturnType< $bog_vmap_app_pane['name_key'] >,
@@ -52800,59 +52837,59 @@ declare namespace $ {
 		,
 		ReturnType< $mol_string['event'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_34 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_35 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['mark_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_35 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_36 = $mol_type_enforce<
 		({ 
 			'title': ReturnType< $bog_vmap_app_pane['mark_hint'] >,
 		})  & ReturnType< $mol_view['attr'] >
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_36 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_37 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_37 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['insert_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_38 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['sizing_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_39 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_40 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_string__style_bog_vmap_app_pane_40 = $mol_type_enforce<
+	type $mol_string__style_bog_vmap_app_pane_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_new_style'] >
 		,
 		ReturnType< $mol_string['style'] >
 	>
-	type $mol_string__hint_bog_vmap_app_pane_41 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_pane_42 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_pane_42 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_pane_43 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_new'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_string__submit_bog_vmap_app_pane_43 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_pane_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_new_submit'] >
 		,
 		ReturnType< $mol_string['submit'] >
 	>
-	type $mol_string__event_bog_vmap_app_pane_44 = $mol_type_enforce<
+	type $mol_string__event_bog_vmap_app_pane_45 = $mol_type_enforce<
 		({ 
 			blur( next?: ReturnType< $bog_vmap_app_pane['text_new_submit'] > ): ReturnType< $bog_vmap_app_pane['text_new_submit'] >,
 			keydown( next?: ReturnType< $bog_vmap_app_pane['text_new_key'] > ): ReturnType< $bog_vmap_app_pane['text_new_key'] >,
@@ -52860,27 +52897,27 @@ declare namespace $ {
 		,
 		ReturnType< $mol_string['event'] >
 	>
-	type $mol_string__style_bog_vmap_app_pane_45 = $mol_type_enforce<
+	type $mol_string__style_bog_vmap_app_pane_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_style'] >
 		,
 		ReturnType< $mol_string['style'] >
 	>
-	type $mol_string__hint_bog_vmap_app_pane_46 = $mol_type_enforce<
+	type $mol_string__hint_bog_vmap_app_pane_47 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_string['hint'] >
 	>
-	type $mol_string__value_bog_vmap_app_pane_47 = $mol_type_enforce<
+	type $mol_string__value_bog_vmap_app_pane_48 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_draft'] >
 		,
 		ReturnType< $mol_string['value'] >
 	>
-	type $mol_string__submit_bog_vmap_app_pane_48 = $mol_type_enforce<
+	type $mol_string__submit_bog_vmap_app_pane_49 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['text_submit'] >
 		,
 		ReturnType< $mol_string['submit'] >
 	>
-	type $mol_string__event_bog_vmap_app_pane_49 = $mol_type_enforce<
+	type $mol_string__event_bog_vmap_app_pane_50 = $mol_type_enforce<
 		({ 
 			blur( next?: ReturnType< $bog_vmap_app_pane['text_submit'] > ): ReturnType< $bog_vmap_app_pane['text_submit'] >,
 			keydown( next?: ReturnType< $bog_vmap_app_pane['text_key'] > ): ReturnType< $bog_vmap_app_pane['text_key'] >,
@@ -52888,37 +52925,37 @@ declare namespace $ {
 		,
 		ReturnType< $mol_string['event'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_50 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_51 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['say_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_51 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_52 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_52 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_53 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['band_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_53 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_54 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['draft_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_54 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_55 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['snap_hint_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_55 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_56 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['guide_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_56 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_57 = $mol_type_enforce<
 		({ 
 			'bog_vmap_app_pane_guide_picked': ReturnType< $bog_vmap_app_pane['guide_picked'] >,
 			'bog_vmap_app_pane_guide_axis': ReturnType< $bog_vmap_app_pane['guide_axis'] >,
@@ -52927,7 +52964,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__event_bog_vmap_app_pane_57 = $mol_type_enforce<
+	type $mol_view__event_bog_vmap_app_pane_58 = $mol_type_enforce<
 		({ 
 			pointerdown( next?: ReturnType< $bog_vmap_app_pane['guide_press'] > ): ReturnType< $bog_vmap_app_pane['guide_press'] >,
 			pointermove( next?: ReturnType< $bog_vmap_app_pane['guide_move'] > ): ReturnType< $bog_vmap_app_pane['guide_move'] >,
@@ -52936,34 +52973,34 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['event'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_58 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_59 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['gap_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_59 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_60 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_60 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_61 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ruler_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_61 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_62 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ruler_sub'] >
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__attr_bog_vmap_app_pane_62 = $mol_type_enforce<
+	type $mol_view__attr_bog_vmap_app_pane_63 = $mol_type_enforce<
 		({ 
 			'title': string,
 		})  & ReturnType< $mol_view['attr'] >
 		,
 		ReturnType< $mol_view['attr'] >
 	>
-	type $mol_view__event_bog_vmap_app_pane_63 = $mol_type_enforce<
+	type $mol_view__event_bog_vmap_app_pane_64 = $mol_type_enforce<
 		({ 
 			pointerdown( next?: ReturnType< $bog_vmap_app_pane['ruler_press'] > ): ReturnType< $bog_vmap_app_pane['ruler_press'] >,
 			pointermove( next?: ReturnType< $bog_vmap_app_pane['guide_move'] > ): ReturnType< $bog_vmap_app_pane['guide_move'] >,
@@ -52972,112 +53009,112 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['event'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_64 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_65 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['tick_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_pane_65 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_pane_66 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_66 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_67 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['span_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__style_bog_vmap_app_pane_67 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_pane_68 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ghost_style'] >
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_68 = $mol_type_enforce<
+	type $bog_vmap_app_menu__showed_bog_vmap_app_pane_69 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_showed'] >
 		,
 		ReturnType< $bog_vmap_app_menu['showed'] >
 	>
-	type $bog_vmap_app_menu__left_bog_vmap_app_pane_69 = $mol_type_enforce<
+	type $bog_vmap_app_menu__left_bog_vmap_app_pane_70 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_left'] >
 		,
 		ReturnType< $bog_vmap_app_menu['left'] >
 	>
-	type $bog_vmap_app_menu__top_bog_vmap_app_pane_70 = $mol_type_enforce<
+	type $bog_vmap_app_menu__top_bog_vmap_app_pane_71 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_top'] >
 		,
 		ReturnType< $bog_vmap_app_menu['top'] >
 	>
-	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_71 = $mol_type_enforce<
+	type $bog_vmap_app_menu__on_node_bog_vmap_app_pane_72 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_on_node'] >
 		,
 		ReturnType< $bog_vmap_app_menu['on_node'] >
 	>
-	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_72 = $mol_type_enforce<
+	type $bog_vmap_app_menu__editable_bog_vmap_app_pane_73 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['editable'] >
 		,
 		ReturnType< $bog_vmap_app_menu['editable'] >
 	>
-	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_73 = $mol_type_enforce<
+	type $bog_vmap_app_menu__copy_bog_vmap_app_pane_74 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_copy'] >
 		,
 		ReturnType< $bog_vmap_app_menu['copy'] >
 	>
-	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_74 = $mol_type_enforce<
+	type $bog_vmap_app_menu__remove_bog_vmap_app_pane_75 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_delete'] >
 		,
 		ReturnType< $bog_vmap_app_menu['remove'] >
 	>
-	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_75 = $mol_type_enforce<
+	type $bog_vmap_app_menu__wrap_bog_vmap_app_pane_76 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_wrap'] >
 		,
 		ReturnType< $bog_vmap_app_menu['wrap'] >
 	>
-	type $bog_vmap_app_menu__group_bog_vmap_app_pane_76 = $mol_type_enforce<
+	type $bog_vmap_app_menu__group_bog_vmap_app_pane_77 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_group'] >
 		,
 		ReturnType< $bog_vmap_app_menu['group'] >
 	>
-	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_77 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_bog_vmap_app_pane_78 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_ungroup'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup'] >
 	>
-	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_78 = $mol_type_enforce<
+	type $bog_vmap_app_menu__ungroup_enabled_bog_vmap_app_pane_79 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['ungroup_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['ungroup_enabled'] >
 	>
-	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_79 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_bog_vmap_app_pane_80 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['node_reset_all'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset'] >
 	>
-	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_80 = $mol_type_enforce<
+	type $bog_vmap_app_menu__reset_enabled_bog_vmap_app_pane_81 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['reset_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['reset_enabled'] >
 	>
-	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_81 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_bog_vmap_app_pane_82 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent'] >
 	>
-	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_82 = $mol_type_enforce<
+	type $bog_vmap_app_menu__parent_enabled_bog_vmap_app_pane_83 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_parent_enabled'] >
 		,
 		ReturnType< $bog_vmap_app_menu['parent_enabled'] >
 	>
-	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_83 = $mol_type_enforce<
+	type $bog_vmap_app_menu__enter_bog_vmap_app_pane_84 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_enter'] >
 		,
 		ReturnType< $bog_vmap_app_menu['enter'] >
 	>
-	type $bog_vmap_app_menu__board_bog_vmap_app_pane_84 = $mol_type_enforce<
+	type $bog_vmap_app_menu__board_bog_vmap_app_pane_85 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['menu_board'] >
 		,
 		ReturnType< $bog_vmap_app_menu['board'] >
 	>
-	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_85 = $mol_type_enforce<
+	type $bog_vmap_app_menu__fit_bog_vmap_app_pane_86 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_pane['camera_reset'] >
 		,
 		ReturnType< $bog_vmap_app_menu['fit'] >
@@ -53096,6 +53133,7 @@ declare namespace $ {
 		node_press( next?: any ): any
 		node_move( next?: any ): any
 		node_release( next?: any ): any
+		node_lost( next?: any ): any
 		node_away( next?: any ): any
 		node_context( next?: any ): any
 		wire_lines( ): readonly($bog_vmap_app_wire_line)[]
@@ -53374,6 +53412,7 @@ declare namespace $ {
 		press( next?: any ): any
 		move( next?: any ): any
 		release( next?: any ): any
+		lost( next?: any ): any
 		away( next?: any ): any
 		context( next?: any ): any
 		frame_style( id: any): Record<string, any>
@@ -53392,6 +53431,8 @@ declare namespace $ {
 			pointerdown( next?: ReturnType< $bog_vmap_app_pane_overlay['press'] > ): ReturnType< $bog_vmap_app_pane_overlay['press'] >,
 			pointermove( next?: ReturnType< $bog_vmap_app_pane_overlay['move'] > ): ReturnType< $bog_vmap_app_pane_overlay['move'] >,
 			pointerup( next?: ReturnType< $bog_vmap_app_pane_overlay['release'] > ): ReturnType< $bog_vmap_app_pane_overlay['release'] >,
+			pointercancel( next?: ReturnType< $bog_vmap_app_pane_overlay['release'] > ): ReturnType< $bog_vmap_app_pane_overlay['release'] >,
+			lostpointercapture( next?: ReturnType< $bog_vmap_app_pane_overlay['lost'] > ): ReturnType< $bog_vmap_app_pane_overlay['lost'] >,
 			pointerleave( next?: ReturnType< $bog_vmap_app_pane_overlay['away'] > ): ReturnType< $bog_vmap_app_pane_overlay['away'] >,
 			contextmenu( next?: ReturnType< $bog_vmap_app_pane_overlay['context'] > ): ReturnType< $bog_vmap_app_pane_overlay['context'] >,
 		})  & ReturnType< $mol_view['event'] >
@@ -53889,6 +53930,7 @@ declare namespace $.$$ {
             entering: boolean;
             name: string | null;
         } | null;
+        held(event: PointerEvent): boolean;
         press_track(event: PointerEvent): void;
         hovered(next?: string | null): string | null;
         hover_track(event: PointerEvent): void;
@@ -53920,6 +53962,7 @@ declare namespace $.$$ {
         };
         node_away(): null;
         node_move(event?: PointerEvent): void | readonly string[];
+        node_lost(event?: PointerEvent): void;
         node_release(event?: PointerEvent): void | readonly string[];
         click_send(point: readonly [number, number], event: PointerEvent): void;
         frames(): string[];

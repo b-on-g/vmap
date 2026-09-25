@@ -2400,9 +2400,11 @@ $bog_vmap_app_palette_item $mol_button_minor
 	current false
 	minimal_height 24
 	drag_start? null
+	lacking false
 	attr *
 		^
 		bog_vmap_app_palette_item_current <= current
+		bog_vmap_app_palette_item_lacking <= lacking
 	event *
 		^
 		pointerdown? <=> drag_start?
@@ -2617,10 +2619,16 @@ $bog_vmap_app_shelf $mol_page
 					accept \.tree
 					multiple true
 					files? <=> files?
+	pack_state_note \
+	place_note? \
 	Parts $mol_expander
 		title \Готовые детали
 		expanded? <=> parts_expanded? true
-		content /
+		content <= parts_content /
+			<= Pack_state $mol_status
+				status <= pack_state_note
+			<= Place_note $mol_status
+				status <= place_note?
 			<= Items $mol_list
 				rows <= item_rows /
 	Apps $mol_form_field
@@ -2648,6 +2656,7 @@ $bog_vmap_app_shelf $mol_page
 	Item_row* $bog_vmap_app_palette_item
 		title <= item_title* \
 		hint <= item_hint* \
+		lacking <= item_lacking* false
 		click? <=> item_click*? null
 		drag_start? <=> item_drag*? null
 
@@ -3662,6 +3671,7 @@ $bog_vmap_app_pane $mol_view
 		press? <=> node_press? null
 		move? <=> node_move? null
 		release? <=> node_release? null
+		lost? <=> node_lost? null
 		away? <=> node_away? null
 		context? <=> node_context? null
 	Wire $bog_vmap_app_wire
@@ -3815,6 +3825,7 @@ $bog_vmap_app_pane_overlay $mol_view
 	press? null
 	move? null
 	release? null
+	lost? null
 	away? null
 	context? null
 	event *
@@ -3822,6 +3833,8 @@ $bog_vmap_app_pane_overlay $mol_view
 		pointerdown? <=> press? null
 		pointermove? <=> move? null
 		pointerup? <=> release? null
+		pointercancel? <=> release? null
+		lostpointercapture? <=> lost? null
 		pointerleave? <=> away? null
 		contextmenu? <=> context? null
 	Frame* $mol_view

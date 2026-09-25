@@ -35418,8 +35418,15 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		lacking(){
+			return false;
+		}
 		attr(){
-			return {...(super.attr()), "bog_vmap_app_palette_item_current": (this.current())};
+			return {
+				...(super.attr()), 
+				"bog_vmap_app_palette_item_current": (this.current()), 
+				"bog_vmap_app_palette_item_lacking": (this.lacking())
+			};
 		}
 		event(){
 			return {...(super.event()), "pointerdown": (next) => (this.drag_start(next))};
@@ -36580,6 +36587,16 @@ var $;
 			if(next !== undefined) return next;
 			return true;
 		}
+		Pack_state(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.pack_state_note()));
+			return obj;
+		}
+		Place_note(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.place_note()));
+			return obj;
+		}
 		item_rows(){
 			return [];
 		}
@@ -36587,6 +36604,13 @@ var $;
 			const obj = new this.$.$mol_list();
 			(obj.rows) = () => ((this.item_rows()));
 			return obj;
+		}
+		parts_content(){
+			return [
+				(this.Pack_state()), 
+				(this.Place_note()), 
+				(this.Items())
+			];
 		}
 		apps_title(){
 			return "";
@@ -36620,6 +36644,9 @@ var $;
 		}
 		item_hint(id){
 			return "";
+		}
+		item_lacking(id){
+			return false;
 		}
 		item_click(id, next){
 			if(next !== undefined) return next;
@@ -36705,11 +36732,18 @@ var $;
 			(obj.content) = () => ((this.source_content()));
 			return obj;
 		}
+		pack_state_note(){
+			return "";
+		}
+		place_note(next){
+			if(next !== undefined) return next;
+			return "";
+		}
 		Parts(){
 			const obj = new this.$.$mol_expander();
 			(obj.title) = () => ("Готовые детали");
 			(obj.expanded) = (next) => ((this.parts_expanded(next)));
-			(obj.content) = () => ([(this.Items())]);
+			(obj.content) = () => ((this.parts_content()));
 			return obj;
 		}
 		Apps(){
@@ -36747,6 +36781,7 @@ var $;
 			const obj = new this.$.$bog_vmap_app_palette_item();
 			(obj.title) = () => ((this.item_title(id)));
 			(obj.hint) = () => ((this.item_hint(id)));
+			(obj.lacking) = () => ((this.item_lacking(id)));
 			(obj.click) = (next) => ((this.item_click(id, next)));
 			(obj.drag_start) = (next) => ((this.item_drag(id, next)));
 			return obj;
@@ -36761,6 +36796,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_open"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Import_field"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "parts_expanded"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Pack_state"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Place_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "App_list"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "pack_click"));
@@ -36776,6 +36813,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "filter"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Level"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Source"));
+	($mol_mem(($.$bog_vmap_app_shelf.prototype), "place_note"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Parts"));
 	($mol_mem(($.$bog_vmap_app_shelf.prototype), "Apps"));
 	($mol_mem_key(($.$bog_vmap_app_shelf.prototype), "Pack_row"));
@@ -37152,22 +37190,58 @@ var $;
             pack_classes() {
                 return this.Palette().Lib().class_list();
             }
-            pack_known() {
+            pack_state() {
                 if (!this.pack_link())
-                    return null;
+                    return { known: null, note: '' };
                 try {
-                    return new Set(this.pack_classes());
+                    return { known: new Set(this.pack_classes()), note: '' };
                 }
-                catch {
-                    return null;
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return {
+                            known: null,
+                            note: 'Дерево пака деталей ещё идёт, список пока неполон',
+                        };
+                    return {
+                        known: null,
+                        note: this.$.$bog_vmap_lib_pack_note(this.pack_tree_link(), error),
+                    };
                 }
             }
+            pack_known() {
+                return this.pack_state().known;
+            }
+            pack_state_note() {
+                return this.pack_state().note;
+            }
             items() {
-                const presets = this.$.$bog_vmap_app_shelf_presets();
+                return this.$.$bog_vmap_app_shelf_presets();
+            }
+            item_lacks(id) {
                 const known = this.pack_known();
                 if (!known)
-                    return presets;
-                return presets.filter(item => this.$.$bog_vmap_app_shelf_needs(item.source).every(name => known.has(name)));
+                    return [];
+                const source = this.item(id)?.source ?? '';
+                if (!source)
+                    return [];
+                return this.$.$bog_vmap_app_shelf_needs(source).filter(name => !known.has(name));
+            }
+            item_lacking(id) {
+                return this.item_lacks(id).length > 0;
+            }
+            parts_content() {
+                return [
+                    ...this.pack_state_note() ? [this.Pack_state()] : [],
+                    ...this.place_note() ? [this.Place_note()] : [],
+                    this.Items(),
+                ];
+            }
+            refuse(id) {
+                const lacks = this.item_lacks(id);
+                if (!lacks.length)
+                    return false;
+                this.place_note(`Деталь «${this.item_title(id)}» не положить: в паке нет ${lacks.join(', ')}`);
+                return true;
             }
             items_shown() {
                 return this.items().filter(item => this.$.$bog_vmap_app_shelf_match(this.filter(), item.title, item.hint));
@@ -37206,7 +37280,9 @@ var $;
                 return this.item(id)?.title ?? id;
             }
             item_hint(id) {
-                return this.item(id)?.hint ?? '';
+                const hint = this.item(id)?.hint ?? '';
+                const lacks = this.item_lacks(id);
+                return lacks.length ? `${hint} — не положить, в паке нет ${lacks.join(', ')}` : hint;
             }
             item_source(id) {
                 return this.item(id)?.source ?? '';
@@ -37220,13 +37296,20 @@ var $;
             item_drag(id, event) {
                 if (!event)
                     return;
+                if (this.refuse(id))
+                    return;
+                this.place_note('');
                 this.drag_x(event.clientX);
                 this.drag_y(event.clientY);
                 this.dragged(id);
             }
             item_click(id, event) {
-                if (this.editable())
-                    this.place(id);
+                if (!this.editable())
+                    return;
+                if (this.refuse(id))
+                    return;
+                this.place_note('');
+                this.place(id);
             }
             source_content() {
                 const content = super.source_content();
@@ -37249,7 +37332,7 @@ var $;
         ], $bog_vmap_app_shelf.prototype, "app_state", null);
         __decorate([
             $mol_mem
-        ], $bog_vmap_app_shelf.prototype, "pack_known", null);
+        ], $bog_vmap_app_shelf.prototype, "pack_state", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app_shelf.prototype, "item_drag", null);
@@ -45002,6 +45085,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		node_lost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		node_away(next){
 			if(next !== undefined) return next;
 			return null;
@@ -45538,6 +45625,7 @@ var $;
 			(obj.press) = (next) => ((this.node_press(next)));
 			(obj.move) = (next) => ((this.node_move(next)));
 			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.lost) = (next) => ((this.node_lost(next)));
 			(obj.away) = (next) => ((this.node_away(next)));
 			(obj.context) = (next) => ((this.node_context(next)));
 			return obj;
@@ -45741,6 +45829,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_lost"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_context"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
@@ -45872,6 +45961,10 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		lost(next){
+			if(next !== undefined) return next;
+			return null;
+		}
 		away(next){
 			if(next !== undefined) return next;
 			return null;
@@ -45938,6 +46031,8 @@ var $;
 				"pointerdown": (next) => (this.press(next)), 
 				"pointermove": (next) => (this.move(next)), 
 				"pointerup": (next) => (this.release(next)), 
+				"pointercancel": (next) => (this.release(next)), 
+				"lostpointercapture": (next) => (this.lost(next)), 
 				"pointerleave": (next) => (this.away(next)), 
 				"contextmenu": (next) => (this.context(next))
 			};
@@ -45966,6 +46061,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "press"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "move"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "release"));
+	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "lost"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "away"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "context"));
 	($mol_mem(($.$bog_vmap_app_pane_overlay.prototype), "Handle_nw"));
@@ -46889,8 +46985,16 @@ var $;
                 const drag = this.guide_drag();
                 if (!drag || !next)
                     return null;
-                if (!next.buttons)
-                    return this.guide_release(id, next);
+                if (!next.buttons) {
+                    const node = next.target;
+                    let kept = false;
+                    try {
+                        kept = node?.hasPointerCapture?.(next.pointerId) ?? false;
+                    }
+                    catch { }
+                    if (!kept)
+                        return this.guide_release(id, next);
+                }
                 next.preventDefault();
                 this.guide_drag({
                     ...drag,
@@ -47724,6 +47828,16 @@ var $;
                 }
                 catch { }
             }
+            held(event) {
+                if (event.buttons)
+                    return true;
+                try {
+                    return this.Overlay().dom_node().hasPointerCapture(event.pointerId);
+                }
+                catch {
+                    return false;
+                }
+            }
             press_track(event) {
                 const press = this.press();
                 if (!press || press.moved)
@@ -47865,7 +47979,7 @@ var $;
                 this.hover_track(event);
                 const sizing = this.sizing();
                 if (sizing) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.sizing({ ...sizing, to: this.world_point(event), ratio: Boolean(event.shiftKey) });
@@ -47873,14 +47987,14 @@ var $;
                 }
                 const draft = this.draft();
                 if (draft) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.draft({ from: draft.from, to: this.world_point(event) });
                     return;
                 }
                 if (this.wire_drag()) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.wire_point(this.screen_point(event));
@@ -47889,7 +48003,7 @@ var $;
                 }
                 const band = this.band();
                 if (band) {
-                    if (!event.buttons)
+                    if (!this.held(event))
                         return this.node_release(event);
                     event.preventDefault();
                     this.band({ from: band.from, to: this.world_point(event) });
@@ -47898,7 +48012,7 @@ var $;
                 const drag = this.drag();
                 if (!drag)
                     return;
-                if (!event.buttons)
+                if (!this.held(event))
                     return this.node_release(event);
                 event.preventDefault();
                 const point = this.world_point(event);
@@ -47922,6 +48036,13 @@ var $;
                     };
                 }
                 this.spots(next);
+            }
+            node_lost(event) {
+                if (!event)
+                    return;
+                if (!this.sizing() && !this.draft() && !this.band() && !this.drag() && !this.wire_drag())
+                    return;
+                this.node_release(event);
             }
             node_release(event) {
                 if (!event)
