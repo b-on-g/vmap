@@ -360,7 +360,8 @@ namespace $ {
 		const rect = $bog_vmap_app_flow_rect
 		pane.dom_node().getBoundingClientRect = ()=> rect as DOMRect
 		pane.view_rect = ()=> rect
-		pane.Touch().view_rect = ()=> rect
+		pane.Field().view_rect = ()=> rect
+		pane.Field().Touch().view_rect = ()=> rect
 
 		if( over.mute ) {
 			deliver({ kind: 'ready' })

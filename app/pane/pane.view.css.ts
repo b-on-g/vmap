@@ -6,6 +6,15 @@ namespace $.$$ {
 		'--bog_vmap_board': `color-mix( in oklch, ${ $mol_theme.back }, ${ $mol_theme.shade } 25% )`,
 		background: { color: $mol_style_func.vary( '--bog_vmap_board' ) },
 
+		Field: {
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			right: 0,
+			bottom: 0,
+			overflow: 'hidden',
+		},
+
 		Scene: {
 			position: 'absolute',
 			top: 0,

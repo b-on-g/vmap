@@ -376,6 +376,13 @@ namespace $.$$ {
 
 		override sub() {
 			return [
+				this.Field(),
+				... this.ruler_views(),
+			] as readonly $mol_view[]
+		}
+
+		override field_sub() {
+			return [
 				... this.scene_shown() ? [ this.Scene( this.scene_key() ) ] : [],
 				this.Overlay(),
 				this.Wire(),
@@ -391,10 +398,14 @@ namespace $.$$ {
 				... this.draft() ? [ this.Draft() ] : [],
 				... this.guide_views(),
 				... this.gap_views(),
-				... this.ruler_views(),
 				... this.ghost_views(),
 				... this.menu() ? [ this.menu_view() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		override field_style(): { readonly [ prop: string ]: string } {
+			const size = this.ruler_size() + 'px'
+			return { left: size, top: size }
 		}
 
 		@ $mol_mem
@@ -821,8 +832,9 @@ namespace $.$$ {
 		}
 
 		ruler_shown() {
-			const rect = this.pane_rect()
+			const rect = this.view_rect()
 			const room = this.ruler_room()
+			if( !rect ) return false
 			return rect.width >= room.width && rect.height >= room.height
 		}
 
@@ -907,7 +919,7 @@ namespace $.$$ {
 			const at = tick.at * zoom + ( axis === 'x' ? shift[ 0 ] : shift[ 1 ] )
 
 			return axis === 'x'
-				? { left: ( at - this.ruler_size() ) + 'px' }
+				? { left: at + 'px' }
 				: { top: at + 'px' }
 		}
 
@@ -918,7 +930,7 @@ namespace $.$$ {
 			if( !span ) return {}
 
 			return axis === 'x'
-				? { left: ( span.at - this.ruler_size() ) + 'px', width: span.size + 'px' }
+				? { left: span.at + 'px', width: span.size + 'px' }
 				: { top: span.at + 'px', height: span.size + 'px' }
 		}
 
@@ -1675,7 +1687,7 @@ namespace $.$$ {
 		}
 
 		pane_rect(): $bog_vmap_app_pane_screen_box {
-			const rect = this.view_rect()
+			const rect = this.Field().view_rect()
 			if( !rect ) return { left: 0, top: 0, width: 0, height: 0 }
 			return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
 		}
