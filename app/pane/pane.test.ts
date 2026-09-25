@@ -5629,6 +5629,35 @@ namespace $ {
 
 		},
 
+		'a press on the ruler band itself leaves a guide on the canvas'( $ ) {
+
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+			const room = $bog_vmap_app_flow_rect
+
+			const band = pane.Ruler( 'x' ).dom_node()
+
+			$mol_assert_equal( band.getAttribute( 'id' )?.includes( 'Ruler' ), true )
+			$mol_assert_like( stage.app.guides(), {} )
+
+			stage.press( band, [ room.left + 240, room.top + 8 ] )
+
+			const id = pane.guide_ids()[ 0 ]
+
+			$mol_assert_equal( pane.guide_ids().length, 1 )
+			$mol_assert_equal( pane.field_sub().includes( pane.Guide( id ) ), true )
+
+			stage.move( band, [ room.left + 260, room.top + 120 ] )
+			stage.release( band, [ room.left + 260, room.top + 120 ], { buttons: 0 } )
+			stage.redraw()
+
+			const kept = Object.values( stage.app.guides() ) as readonly { axis: string, at: number }[]
+
+			$mol_assert_like( kept, [ { axis: 'x', at: 260 } ] )
+			$mol_assert_like( pane.guide_style( id ), { left: '260px', top: '0', bottom: '0', width: '1px' } )
+
+		},
+
 		'the mark of zero stands over the zero of the field and inside its own band'( $ ) {
 
 			const stage = $bog_vmap_app_flow_stage( $ )
