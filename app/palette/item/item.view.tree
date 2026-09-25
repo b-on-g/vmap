@@ -2,9 +2,11 @@ $bog_vmap_app_palette_item $mol_button_minor
 	current false
 	minimal_height 24
 	drag_start? null
+	lacking false
 	attr *
 		^
 		bog_vmap_app_palette_item_current <= current
+		bog_vmap_app_palette_item_lacking <= lacking
 	event *
 		^
 		pointerdown? <=> drag_start?

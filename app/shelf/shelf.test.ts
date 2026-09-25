@@ -214,7 +214,7 @@ namespace $ {
 
 		},
 
-		'the shelf is cut down to what the pack at hand can build'( $ ) {
+		'what the pack cannot build stays on the shelf, marked and named'( $ ) {
 
 			const shelf = ( classes: readonly string[] )=> shelf_make( $, {
 				pack_link: ()=> 'https://pack.test/',
@@ -223,23 +223,72 @@ namespace $ {
 
 			const ids = ( one: $$.$bog_vmap_app_shelf )=> one.items().map( item => item.id )
 
-			const rich = ids( shelf([
+			const rich = shelf([
 				`${d}mol_view`, `${d}mol_string`, `${d}mol_number`,
 				`${d}bog_vmap_part_calc`, `${d}bog_vmap_part_map`,
-			]) )
+			])
 
-			const poor = ids( shelf([ `${d}mol_view`, `${d}mol_string` ]) )
+			const poor = shelf([ `${d}mol_view`, `${d}mol_string` ])
 
-			$mol_assert_equal( rich.includes( 'calc' ), true )
-			$mol_assert_equal( rich.includes( 'pair' ), true )
-			$mol_assert_equal( rich.includes( 'input_number' ), true )
+			$mol_assert_equal( ids( rich ).length, ids( poor ).length )
+			$mol_assert_equal( ids( poor ).includes( 'calc' ), true )
 
-			$mol_assert_equal( poor.includes( 'calc' ), false )
-			$mol_assert_equal( poor.includes( 'pair' ), false )
-			$mol_assert_equal( poor.includes( 'input_number' ), false )
+			$mol_assert_equal( rich.item_lacking( 'calc' ), false )
+			$mol_assert_equal( rich.item_lacking( 'input_number' ), false )
 
-			$mol_assert_equal( poor.includes( 'block' ), true )
-			$mol_assert_equal( poor.includes( 'input_string' ), true )
+			$mol_assert_equal( poor.item_lacking( 'calc' ), true )
+			$mol_assert_equal( poor.item_lacking( 'pair' ), true )
+			$mol_assert_equal( poor.item_lacking( 'input_number' ), true )
+
+			$mol_assert_equal( poor.item_lacking( 'block' ), false )
+			$mol_assert_equal( poor.item_lacking( 'input_string' ), false )
+
+			$mol_assert_like( poor.item_lacks( 'calc' ), [ `${d}bog_vmap_part_calc` ] )
+			$mol_assert_ok( poor.item_hint( 'calc' ).includes( `в паке нет ${d}bog_vmap_part_calc` ) )
+
+		},
+
+		'a part the pack cannot build is refused by words and never starts a drag'( $ ) {
+
+			const one = shelf_make( $, {
+				pack_link: ()=> 'https://pack.test/',
+				pack_classes: ()=> [ `${d}mol_view`, `${d}mol_string` ],
+			})
+
+			let placed = ''
+			one.place = ( next?: string )=> { placed = next ?? ''; return '' }
+
+			one.item_click( 'calc', null )
+
+			$mol_assert_equal( placed, '' )
+			$mol_assert_ok( one.place_note().includes( 'не положить' ) )
+			$mol_assert_ok( one.place_note().includes( `${d}bog_vmap_part_calc` ) )
+			$mol_assert_ok( one.parts_content().includes( one.Place_note() ) )
+
+			one.item_drag( 'calc', { clientX: 10, clientY: 20 } as PointerEvent )
+
+			$mol_assert_equal( one.dragged(), '' )
+
+			one.item_click( 'block', null )
+
+			$mol_assert_equal( placed, 'block' )
+			$mol_assert_equal( one.place_note(), '' )
+
+		},
+
+		'while the pack tree is on the way the shelf says the list is not complete'( $ ) {
+
+			const one = shelf_make( $, {
+				pack_link: ()=> 'https://pack.test/',
+				pack_classes: ()=> $mol_fail_hidden( new Promise( ()=> {} ) ) as never,
+			})
+
+			$mol_assert_ok( one.pack_state_note().includes( 'ещё идёт' ) )
+			$mol_assert_ok( one.pack_state_note().includes( 'неполон' ) )
+			$mol_assert_equal( one.pack_known(), null )
+			$mol_assert_equal( one.item_lacking( 'calc' ), false )
+			$mol_assert_equal( one.items().length, $bog_vmap_app_shelf_presets().length )
+			$mol_assert_ok( one.parts_content().includes( one.Pack_state() ) )
 
 		},
 

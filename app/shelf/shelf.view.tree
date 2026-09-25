@@ -45,10 +45,16 @@ $bog_vmap_app_shelf $mol_page
 					accept \.tree
 					multiple true
 					files? <=> files?
+	pack_state_note \
+	place_note? \
 	Parts $mol_expander
 		title \Готовые детали
 		expanded? <=> parts_expanded? true
-		content /
+		content <= parts_content /
+			<= Pack_state $mol_status
+				status <= pack_state_note
+			<= Place_note $mol_status
+				status <= place_note?
 			<= Items $mol_list
 				rows <= item_rows /
 	Apps $mol_form_field
@@ -76,5 +82,6 @@ $bog_vmap_app_shelf $mol_page
 	Item_row* $bog_vmap_app_palette_item
 		title <= item_title* \
 		hint <= item_hint* \
+		lacking <= item_lacking* false
 		click? <=> item_click*? null
 		drag_start? <=> item_drag*? null

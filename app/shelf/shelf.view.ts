@@ -148,29 +148,73 @@ namespace $.$$ {
 		}
 
 		@ $mol_mem
-		pack_known(): ReadonlySet< string > | null {
+		pack_state(): { readonly known: ReadonlySet< string > | null, readonly note: string } {
 
-			if( !this.pack_link() ) return null
+			if( !this.pack_link() ) return { known: null, note: '' }
 
 			try {
-				return new Set( this.pack_classes() )
-			} catch {
-				return null
+				return { known: new Set( this.pack_classes() ), note: '' }
+			} catch( error: unknown ) {
+
+				if( $mol_promise_like( error ) ) return {
+					known: null,
+					note: 'Дерево пака деталей ещё идёт, список пока неполон',
+				}
+
+				return {
+					known: null,
+					note: this.$.$bog_vmap_lib_pack_note( this.pack_tree_link(), error ),
+				}
+
 			}
 
 		}
 
-		items(): readonly $bog_vmap_app_shelf_item[] {
+		pack_known() {
+			return this.pack_state().known
+		}
 
-			const presets = this.$.$bog_vmap_app_shelf_presets()
+		override pack_state_note() {
+			return this.pack_state().note
+		}
+
+		items(): readonly $bog_vmap_app_shelf_item[] {
+			return this.$.$bog_vmap_app_shelf_presets()
+		}
+
+		item_lacks( id: string ): readonly string[] {
 
 			const known = this.pack_known()
-			if( !known ) return presets
+			if( !known ) return []
 
-			return presets.filter(
-				item => this.$.$bog_vmap_app_shelf_needs( item.source ).every( name => known.has( name ) )
+			const source = this.item( id )?.source ?? ''
+			if( !source ) return []
+
+			return this.$.$bog_vmap_app_shelf_needs( source ).filter( name => !known.has( name ) )
+		}
+
+		override item_lacking( id: string ) {
+			return this.item_lacks( id ).length > 0
+		}
+
+		override parts_content() {
+			return [
+				... this.pack_state_note() ? [ this.Pack_state() ] : [],
+				... this.place_note() ? [ this.Place_note() ] : [],
+				this.Items(),
+			] as readonly $mol_view[]
+		}
+
+		refuse( id: string ) {
+
+			const lacks = this.item_lacks( id )
+			if( !lacks.length ) return false
+
+			this.place_note(
+				`Деталь «${ this.item_title( id ) }» не положить: в паке нет ${ lacks.join( ', ' ) }`
 			)
 
+			return true
 		}
 
 		items_shown() {
@@ -224,7 +268,11 @@ namespace $.$$ {
 		}
 
 		item_hint( id: string ) {
-			return this.item( id )?.hint ?? ''
+
+			const hint = this.item( id )?.hint ?? ''
+			const lacks = this.item_lacks( id )
+
+			return lacks.length ? `${ hint } — не положить, в паке нет ${ lacks.join( ', ' ) }` : hint
 		}
 
 		override item_source( id: string ) {
@@ -243,6 +291,9 @@ namespace $.$$ {
 		item_drag( id: string, event?: PointerEvent | null ) {
 
 			if( !event ) return
+			if( this.refuse( id ) ) return
+
+			this.place_note( '' )
 
 			this.drag_x( event.clientX )
 			this.drag_y( event.clientY )
@@ -252,7 +303,13 @@ namespace $.$$ {
 
 		@ $mol_action
 		item_click( id: string, event?: Event | null ) {
-			if( this.editable() ) this.place( id )
+
+			if( !this.editable() ) return
+			if( this.refuse( id ) ) return
+
+			this.place_note( '' )
+			this.place( id )
+
 		}
 
 		override source_content() {
