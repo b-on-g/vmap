@@ -316,6 +316,7 @@ namespace $ {
 						return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom }
 					}
 					const pane = box( 'pane' )
+					const field = app.Pane().pane_rect()
 					const part = app.Pane().part_box( ${ JSON.stringify( part_name ) } )
 					const spot = side => {
 						const column = box( side )
@@ -335,7 +336,7 @@ namespace $ {
 						right: paint( 'right' ),
 						spots: { left: spot( 'left' ), right: spot( 'right' ) },
 						boxes: { pane, frame: box( 'pane_scene' ) },
-						board: part && { x: pane.left + part.left + part.width / 2, y: pane.top + part.top + part.height / 2 },
+						board: part && { x: field.left + part.left + part.width / 2, y: field.top + part.top + part.height / 2 },
 					}
 				`, 15000 ) as {
 					theme: string, wanted: string, pane: string, left: string, right: string,
@@ -1500,7 +1501,7 @@ namespace $ {
 			const hole = await browser.evaluate( `
 				const pane = ${ app }.Pane()
 				const box = pane.frame_box()
-				const rect = pane.dom_node().getBoundingClientRect()
+				const rect = pane.pane_rect()
 				return box ? [ rect.left + box.left + box.width / 2, rect.top + box.top + box.height / 2 ] : null
 			`, 15000 ) as [ number, number ] | null
 			if( !hole ) return $mol_fail( new Error( `${ at } над деталью ${ name } нет выреза` ) )
