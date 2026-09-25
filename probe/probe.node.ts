@@ -1297,17 +1297,60 @@ namespace $ {
 		{ name: 'parts', title: 'Готовые детали' },
 	]
 
+	export type $bog_vmap_probe_shot = {
+		readonly нет?: boolean
+		readonly x?: number
+		readonly y?: number
+		readonly свой?: boolean
+		readonly под?: string
+	}
+
+	export function $bog_vmap_probe_shot_script( find: string ) {
+		return `
+			const node = ${ find }
+			if( !node ) return { нет: true }
+
+			const aim = ()=> {
+				const box = node.getBoundingClientRect()
+				const x = box.left + box.width / 2
+				const y = box.top + box.height / 2
+				const hit = document.elementFromPoint( x, y )
+				const под = hit
+					? ( hit.getAttributeNames().find( one => one.startsWith( 'bog_' ) || one.startsWith( 'mol_' ) ) ?? hit.tagName )
+					: 'пустое место'
+				return { x, y, свой: Boolean( hit ) && node.contains( hit ), под }
+			}
+
+			node.scrollIntoView({ block: 'nearest' })
+
+			return aim()
+		`
+	}
+
+	export async function $bog_vmap_probe_shot_of( browser: $bog_probe_browser, find: string ) {
+		return await browser.evaluate( $bog_vmap_probe_shot_script( find ), 15000 ) as $bog_vmap_probe_shot
+	}
+
+	export async function $bog_vmap_probe_aim( browser: $bog_probe_browser, find: string, note: string ) {
+
+		const shot = await $bog_vmap_probe_shot_of( browser, find )
+
+		if( shot.нет ) $mol_fail( new Error( `${ note }: узла нет на странице` ) )
+
+		if( !shot.свой ) $mol_fail( new Error(
+			`${ note }: в точке ${ Math.round( shot.x ?? 0 ) }, ${ Math.round( shot.y ?? 0 ) } лежит не он, а ${ shot.под };`
+			+ ' жест ушёл бы мимо'
+		) )
+
+		return [ shot.x!, shot.y! ] as [ number, number ]
+	}
+
 	export function $bog_vmap_probe_mouse( browser: $bog_probe_browser, at: string ) {
 
-		const point = async ( find: string )=> await browser.evaluate( `
-			const node = ${ find }
-			if( !node ) return null
-			node.scrollIntoView({ block: 'nearest' })
-			const box = node.getBoundingClientRect()
-			const x = box.left + box.width / 2
-			const y = box.top + box.height / 2
-			return node.contains( document.elementFromPoint( x, y ) ) ? [ x, y ] : null
-		`, 15000 ) as [ number, number ] | null
+		const point = async ( find: string )=> {
+			const shot = await $bog_vmap_probe_shot_of( browser, find )
+			return shot.свой ? [ shot.x!, shot.y! ] as [ number, number ] : null
+		}
 
 		const mouse = ( type: string, [ x, y ]: readonly [ number, number ], held = false )=> browser.send( 'Input.dispatchMouseEvent', {
 			type, x, y,
@@ -1317,16 +1360,14 @@ namespace $ {
 		}, browser.page )
 
 		const click = async ( find: string, note: string )=> {
-			const spot = await point( find )
-			if( !spot ) return $mol_fail( new Error( `${ at } в центре ${ note } не она сама, клик уйдёт мимо` ) )
+			const spot = await $bog_vmap_probe_aim( browser, find, `${ at } ${ note }` )
 			await mouse( 'mouseMoved', spot )
 			await mouse( 'mousePressed', spot )
 			await mouse( 'mouseReleased', spot )
 		}
 
 		const away = async ()=> {
-			const spot = await point( `document.querySelector( '[bog_vmap_app_canvas_foot]' )` )
-			if( !spot ) return $mol_fail( new Error( `${ at } подвал Холста перекрыт, указатель увести некуда` ) )
+			const spot = await $bog_vmap_probe_aim( browser, `document.querySelector( '[bog_vmap_app_canvas_foot]' )`, `${ at } подвал Холста` )
 			await mouse( 'mouseMoved', spot )
 		}
 
@@ -1335,7 +1376,9 @@ namespace $ {
 			`вкладки «${ label }»`,
 		)
 
-		return { point, mouse, click, away, tab }
+		const aim = ( find: string, note: string )=> $bog_vmap_probe_aim( browser, find, `${ at } ${ note }` )
+
+		return { point, aim, mouse, click, away, tab }
 	}
 
 	export async function $bog_vmap_probe_drive(

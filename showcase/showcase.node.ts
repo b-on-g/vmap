@@ -252,18 +252,8 @@ namespace $ {
 			clickCount: type === 'mouseMoved' ? 0 : count,
 		}, browser.page )
 
-		const spot = async ( find: string, note: string )=> {
-			const got = await browser.evaluate( `
-				const node = ${ find }
-				if( !node ) return null
-				node.scrollIntoView({ block: 'nearest' })
-				const box = node.getBoundingClientRect()
-				const x = box.left + box.width / 2
-				const y = box.top + box.height / 2
-				return node.contains( document.elementFromPoint( x, y ) ) ? [ x, y ] : null
-			`, 15000 ) as number[] | null
-			if( !got ) return $mol_fail( new Error( `${ note }: узла нет или центр его перекрыт, клик уйдёт мимо` ) )
-			return got
+		const spot = async ( find: string, note: string ): Promise< number[] >=> {
+			return [ ... await $bog_vmap_probe_aim( browser, find, note ) ]
 		}
 
 		const click = async ( find: string, note: string, count = 1 )=> {
