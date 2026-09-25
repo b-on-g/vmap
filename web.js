@@ -47040,7 +47040,7 @@ var $;
             wire_dots() {
                 const linked = new Set(this.wires().map(link => `${link.to}.${link.to_prop}`));
                 const dots = [];
-                const add = (node, side, lit) => {
+                const add = (node, side, lit, keep = () => true) => {
                     const box = this.part_box(node);
                     if (!box)
                         return;
@@ -47054,13 +47054,16 @@ var $;
                     if (this.part_spread(node)) {
                         const lift = this.part_lift(node);
                         ports.forEach((port, index) => {
+                            if (!keep(port))
+                                return;
                             const [x, y] = $bog_vmap_app_wire_port_point(box, side, index, lift);
                             mark(port, x, y);
                         });
                         return;
                     }
-                    const index = Math.max(0, ports.findIndex(lit));
-                    const port = ports[index];
+                    const aimed = ports.findIndex(port => keep(port) && lit(port));
+                    const index = aimed < 0 ? ports.findIndex(keep) : aimed;
+                    const port = index < 0 ? null : ports[index];
                     if (!port)
                         return;
                     const [x, y] = $bog_vmap_app_wire_port_point(box, side, index);
@@ -47077,7 +47080,7 @@ var $;
                 }
                 const shown = [this.primary(), this.hovered()].filter(Boolean);
                 for (const name of new Set(shown)) {
-                    add(name, 'in', () => true);
+                    add(name, 'in', () => true, port => linked.has(`${name}.${port.name}`));
                     add(name, 'out', () => true);
                 }
                 return dots;
