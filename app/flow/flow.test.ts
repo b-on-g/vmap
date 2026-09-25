@@ -83,6 +83,22 @@ namespace $ {
 
 	export type $bog_vmap_app_flow_sent = { kind: string, [ key: string ]: unknown }
 
+	export const $bog_vmap_app_flow_swept = ( ()=> {
+
+		const done = $mol_test_complete
+
+		$.$mol_test_complete = function( ... args: unknown[] ) {
+			$bog_vmap_app_flow_last?.destructor()
+			$bog_vmap_app_flow_last = null
+			$bog_vmap_app_flow_host?.remove()
+			$bog_vmap_app_flow_host = null
+			return ( done as ( ... args: unknown[] )=> unknown ).apply( this, args )
+		} as typeof $mol_test_complete
+
+		return true
+
+	} )()
+
 	export const $bog_vmap_app_flow_globals = ( ()=> {
 
 		const dom = $mol_dom_context

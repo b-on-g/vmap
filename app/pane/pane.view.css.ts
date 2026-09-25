@@ -181,6 +181,18 @@ namespace $.$$ {
 			pointerEvents: 'auto',
 		},
 
+		Text_new: {
+			position: 'absolute',
+
+			background: { color: $mol_theme.card },
+			outline: '1px solid ' + String( $mol_theme.focus ),
+
+			padding: { left: '0px', right: '0px', top: '0px', bottom: '0px' },
+
+			transition: 'none',
+			zIndex: 3,
+		},
+
 		Text_field: {
 			position: 'absolute',
 
