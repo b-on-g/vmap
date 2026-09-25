@@ -3,6 +3,7 @@ $bog_vmap_app_inspect_value $mol_list
 	binds /string
 	nodes *
 	alarm? \
+	note \
 	editable true
 	rows <= editors /$mol_view
 	Alarm $mol_status
@@ -27,6 +28,7 @@ $bog_vmap_app_inspect_value $mol_list
 		klass <= seq_klass false
 		binds <= binds
 		nodes <= nodes
+		note <= note
 		alarm? <=> alarm?
 		editable <= editable
 	Bind $bog_vmap_app_inspect_value_bind
@@ -70,8 +72,11 @@ $bog_vmap_app_inspect_value_seq $mol_list
 	alarm? \
 	keyed false
 	klass false
+	note \
 	editable true
 	rows <= seq_sub /$mol_view
+	Note $mol_status
+		status <= note
 	Class_name $mol_string
 		hint \класс
 		value? <=> class_name? \

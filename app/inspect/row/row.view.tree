@@ -10,6 +10,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 	drop? null
 	editable true
 	frozen \
+	note \
 	name <= sign
 	bid <= owner
 	label /
@@ -20,6 +21,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 		tree? <=> value?
 		binds <= binds
 		nodes <= nodes
+		note <= note
 		editable <= editable
 	Frozen $mol_status
 		status <= frozen

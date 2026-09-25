@@ -236,6 +236,7 @@ $bog_vmap_app $mol_page
 		base? <=> node_base? \
 		bases <= node_bases /string
 		base_titles <= node_base_titles *
+		sub_note \Готовые детали берутся в палитре: вкладка «Ассеты» слева, раздел «Готовые детали». Клик по детали ставит её на холст
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null

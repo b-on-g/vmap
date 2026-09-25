@@ -205,8 +205,8 @@ namespace $.$$ {
 			const tree = this.tree()
 
 			const blank = this.keyed()
-				? tree.struct( 'key', [ tree.struct( 'null' ) ] )
-				: tree.struct( 'null' )
+				? tree.struct( 'key', [ tree.data( '' ) ] )
+				: tree.data( '' )
 
 			this.tree( tree.clone([ ... tree.kids, blank ]) )
 
@@ -222,6 +222,7 @@ namespace $.$$ {
 				... this.klass() ? [ this.Class_name() ] : [],
 				this.Items(),
 				this.Add(),
+				... this.note() ? [ this.Note() ] : [],
 			] as readonly $mol_view[]
 		}
 

@@ -140,6 +140,11 @@ namespace $.$$ {
 			return this.owners().get( name ) ?? ''
 		}
 
+		row_note( name: string ) {
+			if( sign_of( this.row_sign( name ) ).name !== 'sub' ) return ''
+			return this.sub_note()
+		}
+
 		row_inherited( name: string ) {
 			return !this.Node().prop_names().includes( name )
 		}

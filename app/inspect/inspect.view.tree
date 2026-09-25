@@ -44,6 +44,7 @@ $bog_vmap_app_inspect $mol_page
 			content <= inherited_rows /$mol_view
 	cell*? null
 	frozen_note \поле заморожено: правка значения сделает его изменяемым
+	sub_note \
 	Empty $mol_status
 		status <= empty_note \Нечего править: в исходнике нет объявления класса
 	Node $bog_vmap_lang_node
@@ -63,6 +64,7 @@ $bog_vmap_app_inspect $mol_page
 		changeable? <=> row_changeable*? false
 		drop? <=> row_drop*? null
 		frozen <= row_frozen* \
+		note <= row_note* \
 		binds <= binds /string
 		nodes <= nodes *
 		editable <= editable

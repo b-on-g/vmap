@@ -3237,3 +3237,118 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+	const d = '$'
+
+	const calc = `${d}flow_calc`
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const board_of = ( stage: stage )=> {
+		stage.app.board_draw({ x: 40, y: 40, width: 400, height: 300 })
+		stage.redraw()
+		return stage.app.selected()!
+	}
+
+	const seq_of = ( stage: stage, prop: string )=> {
+		return stage.app.Inspect().Row( prop ).Value().Seq()
+	}
+
+	$mol_test({
+
+		'an element added to a list can be typed into and lands in the document'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			board_of( stage )
+
+			const seq = seq_of( stage, 'sub' )
+			const was = seq.tree().kids.length
+
+			seq.item_add( null )
+			stage.redraw()
+
+			const item = seq.Item( was )
+
+			$mol_assert_equal( seq.tree().kids.length, was + 1 )
+			$mol_assert_equal( $.$bog_vmap_app_inspect_value_kind_of( item.Value().tree() ), 'string' )
+
+			item.Value().String().text( 'Привет' )
+			stage.redraw()
+
+			$mol_assert_ok( stage.app.doc_source().includes( '\\Привет' ) )
+			$mol_assert_ok( stage.app.doc_src().includes( '\\Привет' ) )
+
+		},
+
+		'the editor drawn for a fresh element is not a disabled one'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			board_of( stage )
+			stage.click( stage.check( 'Дизайн' ) )
+
+			const seq = seq_of( stage, 'sub' )
+			const was = seq.tree().kids.length
+
+			seq.item_add( null )
+			stage.redraw()
+
+			const fields = [ ... seq.Item( was ).Value().dom_node().querySelectorAll( 'input, textarea' ) ]
+
+			$mol_assert_ok( fields.length )
+			$mol_assert_like( fields.map( el => ( el as HTMLInputElement ).disabled ), fields.map( ()=> false ) )
+
+		},
+
+		'a fresh dictionary entry takes both its key and its value'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			board_of( stage )
+
+			const seq = seq_of( stage, 'style' )
+			const was = seq.tree().kids.length
+
+			$mol_assert_equal( seq.keyed(), true )
+
+			seq.item_add( null )
+			stage.redraw()
+
+			const item = seq.Item( was )
+
+			$mol_assert_equal( $.$bog_vmap_app_inspect_value_kind_of( item.Value().tree() ), 'string' )
+
+			item.key( 'borderRadius' )
+			stage.redraw()
+
+			seq.Item( was ).Value().String().text( '8px' )
+			stage.redraw()
+
+			const source = stage.app.doc_source()
+
+			$mol_assert_ok( source.includes( 'borderRadius \\8px' ) )
+
+		},
+
+		'the palette hint stands at the children list and nowhere else'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			board_of( stage )
+
+			const inspect = stage.app.Inspect()
+			const hint = inspect.row_note( 'sub' )
+
+			$mol_assert_ok( hint.includes( 'палитре' ) )
+			$mol_assert_ok( hint.includes( 'Готовые детали' ) )
+			$mol_assert_equal( inspect.row_note( 'style' ), '' )
+			$mol_assert_equal( inspect.row_note( 'title' ), '' )
+
+			stage.click( stage.check( 'Дизайн' ) )
+
+			$mol_assert_ok( seq_of( stage, 'sub' ).dom_node().textContent!.includes( 'палитре' ) )
+			$mol_assert_equal( seq_of( stage, 'style' ).dom_node().textContent!.includes( 'палитре' ), false )
+
+		},
+
+	})
+
+}
