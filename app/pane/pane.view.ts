@@ -2814,13 +2814,13 @@ namespace $.$$ {
 				this.wires().filter( link => link.to === name ).map( link => link.to_prop )
 			)
 
-			const named = this.board( name )
+			const written = new Set( this.part_overs( name ) )
 
 			return this.part_ports( name ).filter(
-				port => port.own
+				port => written.has( port.name )
 					&& !fed.has( port.name )
 					&& $bog_vmap_app_wire_plain( port )
-					&& !( named && port.name === 'title' )
+					&& port.name !== 'title'
 			)
 		}
 

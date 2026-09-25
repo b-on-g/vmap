@@ -2306,7 +2306,7 @@ namespace $ {
 
 		},
 
-		'an output port is one the part declares itself and no wire feeds'( $ ) {
+		'a value is signed only where the author set it or a wire feeds it'( $ ) {
 			const { pane, node, answer } = wired_make( $ )
 
 			const sizes = { [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) }
@@ -2314,13 +2314,14 @@ namespace $ {
 
 			$mol_assert_like( pane.part_ports( 'Calc' ).map( port => port.name ), [ 'result', 'op', 'title' ] )
 			$mol_assert_like( pane.part_outs( 'Calc' ).map( port => port.name ), [ 'result', 'op' ] )
+			$mol_assert_like( pane.part_outs( 'Map' ).map( port => port.name ), [ 'zoom', 'marker' ] )
 			$mol_assert_like( pane.parts_visible(), [ 'Calc', 'Map' ] )
 			$mol_assert_like( pane.ports_visible(), [ 'Calc.result', 'Calc.op', 'Map.zoom', 'Map.marker' ] )
 
 			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom' })
 
 			$mol_assert_like( pane.part_outs( 'Map' ).map( port => port.name ), [ 'marker' ] )
-			$mol_assert_like( pane.ports_visible(), [ 'Calc.result', 'Calc.op', 'Map.marker' ] )
+			$mol_assert_like( pane.wire_lines().map( line => line.key ), [ 'Map.zoom' ] )
 
 		},
 
@@ -2384,6 +2385,23 @@ namespace $ {
 
 			stage.scene.values({ 'Calc.result': '42', 'Calc.op': 'plus', 'Map.marker': 'дом' })
 
+			$mol_assert_equal( stage.pane.value_labels().length, 0 )
+
+			const node = stage.app.node()
+			const tree = node.tree()
+
+			for( const [ part, port, text ] of [
+				[ 'Calc', 'result', '0' ],
+				[ 'Calc', 'op', 'plus' ],
+				[ 'Map', 'marker', 'дом' ],
+			] ) {
+				node.over_set( part, port, tree.struct( port, [ tree.data( text ) ] ) )
+			}
+
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
+
 			const layer = stage.pane.dom_node().querySelector( '[bog_vmap_app_pane_values]' )
 			const drawn = [ ... layer?.querySelectorAll( '[bog_vmap_app_pane_label]' ) ?? [] ]
 				.map( label => label.textContent )
@@ -2400,6 +2418,17 @@ namespace $ {
 			stage.pane.tool( 'board' )
 			stage.tap( stage.client([ 100, 100 ]) )
 			stage.drop( calc, stage.client([ 560, 450 ]) )
+
+			const node = stage.app.node()
+			const tree = node.tree()
+
+			for( const port of [ 'result', 'op' ] ) {
+				node.over_set( 'Calc', port, tree.struct( port, [ tree.data( '0' ) ] ) )
+			}
+
+			stage.redraw()
+			stage.scene.flush()
+			stage.redraw()
 
 			$mol_assert_like( stage.pane.parts_visible(), [ 'Page', 'Calc' ] )
 			$mol_assert_like( stage.pane.part_ports( 'Page' ).map( port => port.name ), [ 'dom_name', 'sub', 'title' ] )
@@ -2475,6 +2504,7 @@ namespace $ {
 				doc_names: ()=> [ 'Page', 'Send' ],
 				containers: ()=> [ 'Page' ],
 				part_ports: ()=> ports,
+				part_overs: ()=> ports.map( port => port.name ),
 				wires: ()=> [],
 			} )
 
@@ -2487,12 +2517,11 @@ namespace $ {
 			pane.values({ 'Page.title': 'Loan', 'Send.title': 'Отправить' })
 			pane.dom_tree()
 
-			$mol_assert_like( pane.ports_visible(), [ 'Send.title' ] )
+			$mol_assert_like( pane.ports_visible(), [] )
 			$mol_assert_like( pane.label_lines( 'Page' ), [] )
-			$mol_assert_like( pane.label_lines( 'Send' ), [ 'title: Отправить' ] )
+			$mol_assert_like( pane.label_lines( 'Send' ), [] )
 
-			$mol_assert_equal( pane.value_labels().length, 1 )
-			$mol_assert_equal( pane.value_labels()[ 0 ], pane.Label( 'Send' ) )
+			$mol_assert_equal( pane.value_labels().length, 0 )
 
 			const frame = pane.part_box( 'Page' )!
 
@@ -3117,6 +3146,9 @@ namespace $ {
 		const made = pane_make( $, {}, {
 			wires: ()=> node.links(),
 			part_ports: ( name: string )=> ports[ klass_of( name ) ] ?? [],
+			part_overs: ( name: string )=> ( ports[ klass_of( name ) ] ?? [] )
+				.filter( port => port.own )
+				.map( port => port.name ),
 			link_add: ( next?: $$.$bog_vmap_app_pane_link_new | null )=> {
 				if( next ) node.link_add( next )
 				return next ?? null

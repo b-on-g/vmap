@@ -793,17 +793,24 @@ namespace $ {
 			$mol_assert_ok( source.includes( 'zoom <= calc_result' ) )
 
 			stage.scene.flush()
-			$mol_assert_like(
-				stage.scene.last( 'values_want' )!.names,
-				[ 'calc_result', 'Calc.result', 'Calc.op', 'Map.marker' ],
-			)
+			$mol_assert_like( stage.scene.last( 'values_want' )!.names, [ 'calc_result' ] )
 
 			stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' })
 			$mol_assert_like(
 				stage.pane.wire_lines().map( line => [ line.key, line.label ] ),
 				[ [ 'Map.zoom', '42' ] ],
 			)
-			$mol_assert_like( stage.pane.label_lines( 'Calc' ), [ 'result: 42', 'op: plus' ] )
+			$mol_assert_like( stage.pane.label_lines( 'Calc' ), [] )
+
+			const node = stage.app.node()
+			const tree = node.tree()
+			node.over_set( 'Calc', 'op', tree.struct( 'op', [ tree.data( 'plus' ) ] ) )
+
+			stage.redraw()
+			stage.scene.flush()
+			stage.scene.values({ calc_result: '42', 'Calc.result': '42', 'Calc.op': 'plus' })
+
+			$mol_assert_like( stage.pane.label_lines( 'Calc' ), [ 'op: plus' ] )
 
 			stage.tap( stage.part_center( 'Map' ) )
 			stage.press( overlay, stage.port_dot( 'Map', 'zoom', 'in' ) )
@@ -1226,7 +1233,15 @@ namespace $ {
 			const dead = 'http://lost.test/'
 
 			stage.drop( calc, stage.client([ 200, 150 ]) )
+
+			const node = stage.app.node()
+			const tree = node.tree()
+			node.over_set( 'Calc', 'result', tree.struct( 'result', [ tree.data( '0' ) ] ) )
+
+			stage.redraw()
+			stage.scene.flush()
 			stage.scene.values({ 'Calc.result': '42' })
+			stage.redraw()
 
 			$mol_assert_equal( stage.app.status(), 'сцена на связи' )
 			$mol_assert_ok( stage.pane.value_labels().length )
