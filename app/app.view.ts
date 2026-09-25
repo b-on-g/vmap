@@ -2227,6 +2227,171 @@ namespace $.$$ {
 
 		}
 
+		share_names() {
+			return this.node().share_names()
+		}
+
+		share_uses( name: string ) {
+			return this.node().share_uses( name )
+		}
+
+		share_spot( path: string ) {
+			const cut = path.indexOf( '/' )
+			return cut < 0
+				? { prop: path, key: '' }
+				: { prop: path.slice( 0, cut ), key: path.slice( cut + 1 ) }
+		}
+
+		share_at( part: string, path: string ) {
+
+			const { prop, key } = this.share_spot( path )
+			const over = this.node().over_tree( part, prop )?.kids[ 0 ] ?? null
+
+			return key ? this.$.$bog_vmap_lang_dict_get( over, key ) : over
+		}
+
+		share_ref( path: string ) {
+
+			const val = this.share_at( this.selected() ?? '', path )
+			if( val?.type !== '<=' ) return ''
+
+			const head = val.kids[ 0 ]
+			if( !head || head.kids.length ) return ''
+
+			const name = this.$.$mol_view_tree2_prop_parts( head ).name
+
+			return this.share_names().includes( name ) ? name : ''
+		}
+
+		share_able( path: string ) {
+
+			const part = this.selected()
+			if( !part || this.inner() || !this.node_editable() ) return false
+			if( this.share_ref( path ) ) return false
+
+			return this.$.$bog_vmap_lang_plain( this.share_at( part, path ) )
+		}
+
+		share_write( node: $bog_vmap_lang_node, part: string, path: string, value: $mol_tree2 ) {
+
+			const { prop, key } = this.share_spot( path )
+			const over = node.over_tree( part, prop )
+			if( !over ) return false
+
+			if( !key ) {
+				node.over_set( part, prop, over.clone([ value ]) )
+				return true
+			}
+
+			const dict = over.kids[ 0 ]
+			if( dict?.type !== '*' ) return false
+
+			node.over_set( part, prop, over.clone([ this.$.$bog_vmap_lang_dict_set( dict, key, value ) ]) )
+
+			return true
+		}
+
+		@ $mol_action
+		share_make( path: string ) {
+
+			const part = this.selected() ?? ''
+			if( !this.share_able( path ) ) return null
+
+			const value = this.share_at( part, path )!
+			const { prop, key } = this.share_spot( path )
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+			const tree = node.tree()
+
+			const name = node.share_add( node.share_free( key || prop ), value )
+
+			this.share_write( node, part, path, tree.struct( '<=', [ tree.struct( name ) ] ) )
+
+			this.node().tree( node.tree() )
+			this.share_made({ source: this.doc_source(), name, path })
+
+			return null
+		}
+
+		@ $mol_action
+		share_unlink( path: string ) {
+
+			const part = this.selected() ?? ''
+			const name = this.share_ref( path )
+			if( !name || !this.node_editable() ) return null
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			const value = node.prop_decl( name )?.kids[ 0 ]
+			if( !value ) return null
+
+			this.share_write( node, part, path, value )
+
+			if( !node.share_uses( name ).length ) node.prop_drop( name )
+
+			this.node().tree( node.tree() )
+			this.share_made( null )
+
+			return null
+		}
+
+		share_same( name: string, path: string ) {
+
+			const node = this.node()
+
+			const value = node.prop_decl( name )?.kids[ 0 ]
+			if( !value ) return [] as readonly string[]
+
+			const text = value.toString()
+			const linked = new Set( node.share_uses( name ) )
+
+			return node.part_names().filter( part => {
+				if( linked.has( part ) ) return false
+				const val = this.share_at( part, path )
+				return Boolean( val ) && val!.toString() === text
+			} )
+		}
+
+		@ $mol_action
+		share_link( name: string, path: string ) {
+
+			const parts = this.share_same( name, path )
+			if( !parts.length || !this.node_editable() ) return null
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+			const tree = node.tree()
+
+			for( const part of parts ) {
+				this.share_write( node, part, path, tree.struct( '<=', [ tree.struct( name ) ] ) )
+			}
+
+			this.node().tree( node.tree() )
+			this.share_made( null )
+
+			return null
+		}
+
+		@ $mol_mem
+		share_made( next?: { readonly source: string, readonly name: string, readonly path: string } | null ) {
+			return next ?? null
+		}
+
+		share_offer() {
+
+			const made = this.share_made()
+			if( !made ) return ''
+			if( this.doc_source() !== made.source ) return ''
+
+			const same = this.share_same( made.name, made.path )
+			if( !same.length ) return ''
+
+			return `Такое же значение ещё у ${ same.length } ${ same.length === 1 ? 'узла' : 'узлов' }:`
+				+ ` ${ this.base_few( same ) }. Связать с общим «${ made.name }»?`
+		}
+
 		group_names() {
 			const node = this.node()
 			return this.picked().filter( name => ( node.sub_names( name ) ?? [] ).length > 0 )

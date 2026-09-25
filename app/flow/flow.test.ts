@@ -3459,3 +3459,125 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+	const d = '$'
+
+	const calc = `${d}flow_calc`
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const styled = ( stage: stage, part: string, key: string )=> {
+		const dict = stage.app.node().over_tree( part, 'style' )?.kids[ 0 ] ?? null
+		return $bog_vmap_lang_dict_get( dict, key )?.toString().trim() ?? ''
+	}
+
+	const board = ( stage: stage, x: number )=> {
+		stage.app.board_draw({ x, y: 40, width: 200, height: 120 })
+		stage.redraw()
+		return stage.app.selected()!
+	}
+
+	$mol_test({
+
+		'a value made shared leaves a reference behind and is declared once'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const one = board( stage, 40 )
+
+			$mol_assert_equal( stage.app.share_able( 'style/background' ), true )
+			$mol_assert_like( stage.app.share_names(), [] )
+
+			stage.app.share_make( 'style/background' )
+			stage.redraw()
+
+			const names = stage.app.share_names()
+
+			$mol_assert_equal( names.length, 1 )
+			$mol_assert_equal( names[ 0 ], 'background' )
+			$mol_assert_equal( styled( stage, one, 'background' ), '<= background' )
+			$mol_assert_like( stage.app.share_uses( 'background' ), [ one ] )
+			$mol_assert_equal( stage.app.share_ref( 'style/background' ), 'background' )
+			$mol_assert_equal( stage.app.share_able( 'style/background' ), false )
+
+			$mol_assert_equal( ( stage.app.doc_source().match( /var\(--mol_theme_back\)/g ) ?? [] ).length, 1 )
+
+		},
+
+		'the offer names the nodes with the same value and links them only when asked'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const one = board( stage, 40 )
+			const two = board( stage, 400 )
+
+			stage.app.selected( one )
+			stage.app.share_make( 'style/background' )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.share_same( 'background', 'style/background' ), [ two ] )
+			$mol_assert_ok( stage.app.share_offer().includes( 'ещё у 1 узла' ) )
+			$mol_assert_ok( stage.app.share_offer().includes( two ) )
+			$mol_assert_equal( styled( stage, two, 'background' ), '\\var(--mol_theme_back)' )
+
+			stage.app.share_link( 'background', 'style/background' )
+			stage.redraw()
+
+			$mol_assert_equal( styled( stage, two, 'background' ), '<= background' )
+			$mol_assert_like( stage.app.share_uses( 'background' ), [ one, two ] )
+			$mol_assert_equal( stage.app.share_offer(), '' )
+
+		},
+
+		'unlinking puts the value back and takes the shared name away when nobody holds it'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			const one = board( stage, 40 )
+			const two = board( stage, 400 )
+
+			stage.app.selected( one )
+			stage.app.share_make( 'style/background' )
+			stage.app.share_link( 'background', 'style/background' )
+			stage.redraw()
+
+			stage.app.selected( two )
+			stage.app.share_unlink( 'style/background' )
+			stage.redraw()
+
+			$mol_assert_equal( styled( stage, two, 'background' ), '\\var(--mol_theme_back)' )
+			$mol_assert_like( stage.app.share_uses( 'background' ), [ one ] )
+			$mol_assert_like( stage.app.share_names(), [ 'background' ] )
+
+			stage.app.selected( one )
+			stage.app.share_unlink( 'style/background' )
+			stage.redraw()
+
+			$mol_assert_equal( styled( stage, one, 'background' ), '\\var(--mol_theme_back)' )
+			$mol_assert_like( stage.app.share_names(), [] )
+
+		},
+
+		'a shared name is not a cell, not a wire and not a part'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.drop( calc, stage.client([ 100, 100 ]) )
+			const node = stage.app.node()
+			const tree = node.tree()
+
+			node.cell_bind( 'Calc', 'op?', tree.data( 'plus' ) )
+			stage.redraw()
+
+			$mol_assert_ok( stage.app.node().prop_names().includes( 'calc_op' ) )
+			$mol_assert_equal( stage.app.share_names().includes( 'calc_op' ), false )
+			$mol_assert_equal( stage.app.share_names().includes( 'Calc' ), false )
+
+			stage.app.selected( 'Calc' )
+			stage.app.share_make( 'title' )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.share_names().includes( 'calc_op' ), false )
+
+		},
+
+	})
+
+}

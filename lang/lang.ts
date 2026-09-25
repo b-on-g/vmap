@@ -57,10 +57,14 @@ namespace $ {
 		}
 	}
 
-	function cell_plain( value?: $mol_tree2 | null ) {
+	export function $bog_vmap_lang_plain( value?: $mol_tree2 | null ) {
 		if( !value ) return false
 		if( [ '=', '<=', '<=>', '=>', '^' ].includes( value.type ) ) return false
 		return !$mol_view_tree2_class_match( value )
+	}
+
+	function cell_plain( value?: $mol_tree2 | null ) {
+		return $bog_vmap_lang_plain( value )
 	}
 
 	export function $bog_vmap_lang_css_rename( css: string, from: string, to: string ) {
@@ -415,6 +419,81 @@ namespace $ {
 		@ $mol_action
 		prop_drop( name: string ) {
 			this.prop_tree( name, null )
+		}
+
+		share_names() {
+
+			const cells = new Set< string >()
+
+			for( const part of this.part_names() ) {
+				for( const prop of this.inner_refs( part ) ) cells.add( prop )
+				const klass = this.prop_decl( part )?.kids[ 0 ]
+				if( !klass ) continue
+				for( const over of klass.kids ) {
+					const cell = this.cell_of( part, sign_of( over.type ).name )
+					if( cell ) cells.add( cell )
+				}
+			}
+
+			const wires = new Set( this.wires().map( wire => wire.name ) )
+			const parts = new Set( this.part_names() )
+
+			return this.props_tree().kids
+				.map( prop => sign_of( prop.type ).name )
+				.filter( name => name !== 'sub' && !parts.has( name ) && !wires.has( name ) && !cells.has( name ) )
+				.filter( name => cell_plain( this.prop_decl( name )?.kids[ 0 ] ) )
+		}
+
+		share_free( base: string ) {
+
+			const clean = base.replace( /[^0-9a-z_]/gi, '_' ).replace( /^[0-9]+/, '' ).toLowerCase() || 'value'
+			const taken = new Set([ ... this.prop_names(), ... this.ref_names() ])
+
+			for( let i = 1; ; ++ i ) {
+				const name = i === 1 ? clean : `${ clean }_${ i }`
+				if( !taken.has( name ) ) return name
+			}
+
+		}
+
+		@ $mol_action
+		share_add( name: string, value: $mol_tree2 ) {
+
+			const token = this.$.$bog_vmap_lang_token( name, 'Общее значение' )
+
+			if( this.prop_names().includes( token ) ) this.$.$mol_fail(
+				new Error( `Имя ${ JSON.stringify( token ) } в этом документе уже занято` )
+			)
+
+			this.prop_add( token )
+			this.prop_tree( token, this.tree().struct( token, [ value ] ) )
+
+			return token
+		}
+
+		share_uses( name: string ) {
+
+			const used = [] as string[]
+
+			for( const part of this.part_names() ) {
+
+				const klass = this.prop_decl( part )?.kids[ 0 ]
+				if( !klass ) continue
+
+				let found = false
+
+				const walk = ( tree: $mol_tree2 ): void => {
+					const head = tree.kids[ 0 ]
+					if( head && ( tree.type === '<=' || tree.type === '<=>' ) && sign_of( head.type ).name === name ) found = true
+					for( const kid of tree.kids ) walk( kid )
+				}
+
+				walk( klass )
+
+				if( found ) used.push( part )
+			}
+
+			return used
 		}
 
 		@ $mol_action
