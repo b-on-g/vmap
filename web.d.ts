@@ -42934,6 +42934,7 @@ declare namespace $ {
     function $bog_vmap_lang_token(this: $, token: string, role: string): string;
     function $bog_vmap_lang_class_ok(name: string): boolean;
     function $bog_vmap_lang_attr(klass: string): string;
+    function $bog_vmap_lang_plain(value?: $mol_tree2 | null): boolean;
     function $bog_vmap_lang_css_rename(css: string, from: string, to: string): string;
     function $bog_vmap_lang_js_rename(js: string, from: string, to: string): string;
     function $bog_vmap_lang_wire_tree(this: $, wire: $bog_vmap_lang_wire): $mol_tree2;
@@ -42963,6 +42964,10 @@ declare namespace $ {
         prop_tree(name: string, next?: $mol_tree2 | null): $mol_tree2 | null;
         prop_add(name: string): void;
         prop_drop(name: string): void;
+        share_names(): string[];
+        share_free(base: string): string;
+        share_add(name: string, value: $mol_tree2): string;
+        share_uses(name: string): string[];
         prop_rename(name: string, next: string): undefined;
         property(name: string): $bog_vmap_lang_prop;
         part_add(name: string, klass: string): void;
@@ -53400,57 +53405,82 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect_value_seq['note'] >
 	>
-	type $bog_vmap_app_inspect_value_seq__alarm_bog_vmap_app_inspect_value_18 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_seq__path_bog_vmap_app_inspect_value_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value['path'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_seq['path'] >
+	>
+	type $bog_vmap_app_inspect_value_seq__share_able_bog_vmap_app_inspect_value_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value['share_able'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_able'] >
+	>
+	type $bog_vmap_app_inspect_value_seq__share_mark_bog_vmap_app_inspect_value_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value['share_mark'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_mark'] >
+	>
+	type $bog_vmap_app_inspect_value_seq__share_bog_vmap_app_inspect_value_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value['share'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_seq['share'] >
+	>
+	type $bog_vmap_app_inspect_value_seq__share_unshare_bog_vmap_app_inspect_value_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value['share_unshare'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_unshare'] >
+	>
+	type $bog_vmap_app_inspect_value_seq__alarm_bog_vmap_app_inspect_value_23 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['alarm'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_seq['alarm'] >
 	>
-	type $bog_vmap_app_inspect_value_seq__editable_bog_vmap_app_inspect_value_19 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_seq__editable_bog_vmap_app_inspect_value_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_seq['editable'] >
 	>
-	type $bog_vmap_app_inspect_value_bind__tree_bog_vmap_app_inspect_value_20 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_bind__tree_bog_vmap_app_inspect_value_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['tree'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_bind['tree'] >
 	>
-	type $bog_vmap_app_inspect_value_bind__binds_bog_vmap_app_inspect_value_21 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_bind__binds_bog_vmap_app_inspect_value_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_bind['binds'] >
 	>
-	type $bog_vmap_app_inspect_value_bind__nodes_bog_vmap_app_inspect_value_22 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_bind__nodes_bog_vmap_app_inspect_value_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_bind['nodes'] >
 	>
-	type $bog_vmap_app_inspect_value_bind__alarm_bog_vmap_app_inspect_value_23 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_bind__alarm_bog_vmap_app_inspect_value_28 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['alarm'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_bind['alarm'] >
 	>
-	type $bog_vmap_app_inspect_value_bind__editable_bog_vmap_app_inspect_value_24 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_bind__editable_bog_vmap_app_inspect_value_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_bind['editable'] >
 	>
-	type $bog_vmap_app_inspect_value_wire__tree_bog_vmap_app_inspect_value_25 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_wire__tree_bog_vmap_app_inspect_value_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['tree'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_wire['tree'] >
 	>
-	type $bog_vmap_app_inspect_value_wire__nodes_bog_vmap_app_inspect_value_26 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_wire__nodes_bog_vmap_app_inspect_value_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_wire['nodes'] >
 	>
-	type $bog_vmap_app_inspect_value_wire__alarm_bog_vmap_app_inspect_value_27 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_wire__alarm_bog_vmap_app_inspect_value_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['alarm'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_wire['alarm'] >
 	>
-	type $bog_vmap_app_inspect_value_wire__editable_bog_vmap_app_inspect_value_28 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_wire__editable_bog_vmap_app_inspect_value_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_wire['editable'] >
@@ -53468,6 +53498,11 @@ declare namespace $ {
 		nodes( ): Record<string, any>
 		alarm( next?: string ): string
 		note( ): string
+		path( ): string
+		share_able( id: any): boolean
+		share_mark( id: any): string
+		share( id: any, next?: any ): any
+		share_unshare( id: any, next?: any ): any
 		editable( ): boolean
 		rows( ): ReturnType< $bog_vmap_app_inspect_value['editors'] >
 		Alarm( ): $mol_status
@@ -53620,7 +53655,32 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect_value_item['drop'] >
 	>
-	type $bog_vmap_app_inspect_value_item__editable_bog_vmap_app_inspect_value_seq_17 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value_item__path_bog_vmap_app_inspect_value_seq_17 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_seq['item_path'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_item['path'] >
+	>
+	type $bog_vmap_app_inspect_value_item__share_able_bog_vmap_app_inspect_value_seq_18 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_able'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_item['share_able'] >
+	>
+	type $bog_vmap_app_inspect_value_item__share_mark_bog_vmap_app_inspect_value_seq_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_mark'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_item['share_mark'] >
+	>
+	type $bog_vmap_app_inspect_value_item__share_bog_vmap_app_inspect_value_seq_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_seq['share'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_item['share'] >
+	>
+	type $bog_vmap_app_inspect_value_item__share_unshare_bog_vmap_app_inspect_value_seq_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_seq['share_unshare'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value_item['share_unshare'] >
+	>
+	type $bog_vmap_app_inspect_value_item__editable_bog_vmap_app_inspect_value_seq_22 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value_seq['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
@@ -53635,6 +53695,7 @@ declare namespace $ {
 		item_key( id: any, next?: string ): string
 		item_value( id: any, next?: $mol_tree2_empty ): $mol_tree2_empty
 		item_drop( id: any, next?: any ): any
+		item_path( id: any): string
 		tree( next?: $mol_tree2_empty ): $mol_tree2_empty
 		binds( ): readonly(string)[]
 		nodes( ): Record<string, any>
@@ -53642,6 +53703,11 @@ declare namespace $ {
 		keyed( ): boolean
 		klass( ): boolean
 		note( ): string
+		path( ): string
+		share_able( id: any): boolean
+		share_mark( id: any): string
+		share( id: any, next?: any ): any
+		share_unshare( id: any, next?: any ): any
 		editable( ): boolean
 		rows( ): ReturnType< $bog_vmap_app_inspect_value_seq['seq_sub'] >
 		Note( ): $mol_status
@@ -53651,63 +53717,111 @@ declare namespace $ {
 		Item( id: any): $bog_vmap_app_inspect_value_item
 	}
 	
-	type $mol_string__hint_bog_vmap_app_inspect_value_item_1 = $mol_type_enforce<
-		string
-		,
-		ReturnType< $mol_string['hint'] >
-	>
-	type $mol_string__value_bog_vmap_app_inspect_value_item_2 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['key'] >
-		,
-		ReturnType< $mol_string['value'] >
-	>
-	type $mol_string__enabled_bog_vmap_app_inspect_value_item_3 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
-		,
-		ReturnType< $mol_string['enabled'] >
-	>
-	type $bog_vmap_app_inspect_value__tree_bog_vmap_app_inspect_value_item_4 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['value'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_value['tree'] >
-	>
-	type $bog_vmap_app_inspect_value__binds_bog_vmap_app_inspect_value_item_5 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['binds'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_value['binds'] >
-	>
-	type $bog_vmap_app_inspect_value__nodes_bog_vmap_app_inspect_value_item_6 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['nodes'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_value['nodes'] >
-	>
-	type $bog_vmap_app_inspect_value__editable_bog_vmap_app_inspect_value_item_7 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_value['editable'] >
-	>
-	type $mol_button_minor__title_bog_vmap_app_inspect_value_item_8 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_inspect_value_item_1 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_inspect_value_item_9 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_inspect_value_item_2 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_inspect_value_item_10 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_inspect_value_item_3 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['share_click'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_value_item_4 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_inspect_value_item_5 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_inspect_value_item_6 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_inspect_value_item_7 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['unshare_click'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_value_item_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_value_item_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['mark_sub'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_string__hint_bog_vmap_app_inspect_value_item_10 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_string['hint'] >
+	>
+	type $mol_string__value_bog_vmap_app_inspect_value_item_11 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['key'] >
+		,
+		ReturnType< $mol_string['value'] >
+	>
+	type $mol_string__enabled_bog_vmap_app_inspect_value_item_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
+		,
+		ReturnType< $mol_string['enabled'] >
+	>
+	type $bog_vmap_app_inspect_value__tree_bog_vmap_app_inspect_value_item_13 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['value'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['tree'] >
+	>
+	type $bog_vmap_app_inspect_value__binds_bog_vmap_app_inspect_value_item_14 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['binds'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['binds'] >
+	>
+	type $bog_vmap_app_inspect_value__nodes_bog_vmap_app_inspect_value_item_15 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['nodes'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['nodes'] >
+	>
+	type $bog_vmap_app_inspect_value__editable_bog_vmap_app_inspect_value_item_16 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['editable'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_inspect_value_item_17 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_inspect_value_item_18 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_inspect_value_item_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value_item['drop'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_inspect_value_item_11 = $mol_type_enforce<
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_value_item_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_value_item['editable'] >
 		,
 		ReturnType< $mol_button_minor['enabled'] >
 	>
 	export class $bog_vmap_app_inspect_value_item extends $mol_bar {
 		item_sub( ): readonly($mol_view)[]
+		share_click( next?: any ): any
+		unshare_click( next?: any ): any
+		mark_sub( ): readonly($mol_view_content)[]
 		key( next?: string ): string
 		value( next?: $mol_tree2_empty ): $mol_tree2_empty
 		binds( ): readonly(string)[]
@@ -53715,8 +53829,16 @@ declare namespace $ {
 		keyed( ): boolean
 		marker( ): boolean
 		drop( next?: any ): any
+		path( ): string
+		share_able( id: any): boolean
+		share_mark( id: any): string
+		share( id: any, next?: any ): any
+		share_unshare( id: any, next?: any ): any
 		editable( ): boolean
 		sub( ): ReturnType< $bog_vmap_app_inspect_value_item['item_sub'] >
+		Share( ): $mol_button_minor
+		Unshare( ): $mol_button_minor
+		Mark( ): $mol_view
 		Key( ): $mol_string
 		Value( ): $bog_vmap_app_inspect_value
 		Drop( ): $mol_button_minor
@@ -53888,6 +54010,7 @@ declare namespace $.$$ {
         add_title(): "+ свойство" | "+ ключ" | "+ элемент";
         class_name(next?: string): string;
         item_marker(index: number): boolean;
+        item_path(index: number): string;
         item_key(index: number, next?: string): string;
         item_value(index: number, next?: $mol_tree2): $mol_tree2;
         item_add(): void;
@@ -53895,6 +54018,11 @@ declare namespace $.$$ {
         seq_sub(): readonly $mol_view[];
     }
     export class $bog_vmap_app_inspect_value_item extends $.$bog_vmap_app_inspect_value_item {
+        share_here(): boolean;
+        mark_here(): string;
+        share_click(next?: Event | null): null;
+        unshare_click(next?: Event | null): null;
+        mark_sub(): readonly $mol_view_content[];
         item_sub(): readonly $mol_view[];
     }
     export class $bog_vmap_app_inspect_value_bind extends $.$bog_vmap_app_inspect_value_bind {
@@ -53958,72 +54086,142 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect_value['note'] >
 	>
-	type $bog_vmap_app_inspect_value__editable_bog_vmap_app_inspect_row_6 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value__path_bog_vmap_app_inspect_row_6 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['path'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['path'] >
+	>
+	type $bog_vmap_app_inspect_value__share_able_bog_vmap_app_inspect_row_7 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['share_able'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['share_able'] >
+	>
+	type $bog_vmap_app_inspect_value__share_mark_bog_vmap_app_inspect_row_8 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['share_mark'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['share_mark'] >
+	>
+	type $bog_vmap_app_inspect_value__share_bog_vmap_app_inspect_row_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['share'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['share'] >
+	>
+	type $bog_vmap_app_inspect_value__share_unshare_bog_vmap_app_inspect_row_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['share_unshare'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['share_unshare'] >
+	>
+	type $bog_vmap_app_inspect_value__editable_bog_vmap_app_inspect_row_11 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_value['editable'] >
 	>
-	type $mol_status__status_bog_vmap_app_inspect_row_7 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_inspect_row_12 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['frozen'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_check__title_bog_vmap_app_inspect_row_8 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_inspect_row_13 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_inspect_row_9 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_inspect_row_14 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_inspect_row_10 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_inspect_row_15 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_check__enabled_bog_vmap_app_inspect_row_11 = $mol_type_enforce<
+	type $mol_check__enabled_bog_vmap_app_inspect_row_16 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_check['enabled'] >
 	>
-	type $mol_check__title_bog_vmap_app_inspect_row_12 = $mol_type_enforce<
+	type $mol_check__title_bog_vmap_app_inspect_row_17 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['title'] >
 	>
-	type $mol_check__hint_bog_vmap_app_inspect_row_13 = $mol_type_enforce<
+	type $mol_check__hint_bog_vmap_app_inspect_row_18 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_check['hint'] >
 	>
-	type $mol_check__checked_bog_vmap_app_inspect_row_14 = $mol_type_enforce<
+	type $mol_check__checked_bog_vmap_app_inspect_row_19 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 		,
 		ReturnType< $mol_check['checked'] >
 	>
-	type $mol_check__enabled_bog_vmap_app_inspect_row_15 = $mol_type_enforce<
+	type $mol_check__enabled_bog_vmap_app_inspect_row_20 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_check['enabled'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_inspect_row_16 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_inspect_row_21 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_inspect_row_17 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_inspect_row_22 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_inspect_row_23 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['share_click'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_24 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['editable'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_inspect_row_25 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_inspect_row_26 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['hint'] >
+	>
+	type $mol_button_minor__click_bog_vmap_app_inspect_row_27 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['unshare_click'] >
+		,
+		ReturnType< $mol_button_minor['click'] >
+	>
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_28 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['editable'] >
+		,
+		ReturnType< $mol_button_minor['enabled'] >
+	>
+	type $mol_view__sub_bog_vmap_app_inspect_row_29 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect_row['mark_sub'] >
+		,
+		ReturnType< $mol_view['sub'] >
+	>
+	type $mol_button_minor__title_bog_vmap_app_inspect_row_30 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_button_minor['title'] >
+	>
+	type $mol_button_minor__hint_bog_vmap_app_inspect_row_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['drop_hint'] >
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_inspect_row_18 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_inspect_row_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_19 = $mol_type_enforce<
+	type $mol_button_minor__enabled_bog_vmap_app_inspect_row_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
 		,
 		ReturnType< $mol_button_minor['enabled'] >
@@ -54031,7 +54229,11 @@ declare namespace $ {
 	export class $bog_vmap_app_inspect_row extends $mol_form_field {
 		tools( ): readonly($mol_view)[]
 		Tools( ): $mol_row
+		path( ): string
 		Value( ): $bog_vmap_app_inspect_value
+		share_click( next?: any ): any
+		unshare_click( next?: any ): any
+		mark_sub( ): readonly($mol_view_content)[]
 		sign( ): string
 		owner( ): string
 		inherited( ): boolean
@@ -54044,6 +54246,10 @@ declare namespace $ {
 		editable( ): boolean
 		frozen( ): string
 		note( ): string
+		share_able( id: any): boolean
+		share_mark( id: any): string
+		share( id: any, next?: any ): any
+		share_unshare( id: any, next?: any ): any
 		name( ): ReturnType< $bog_vmap_app_inspect_row['sign'] >
 		bid( ): ReturnType< $bog_vmap_app_inspect_row['owner'] >
 		label( ): readonly(any)[]
@@ -54051,6 +54257,9 @@ declare namespace $ {
 		Frozen( ): $mol_status
 		Key( ): $mol_check
 		Next( ): $mol_check
+		Share( ): $mol_button_minor
+		Unshare( ): $mol_button_minor
+		Mark( ): $mol_view
 		drop_hint( ): string
 		Drop( ): $mol_button_minor
 	}
@@ -54060,6 +54269,12 @@ declare namespace $ {
 //# sourceMappingURL=row.view.tree.d.ts.map
 declare namespace $.$$ {
     class $bog_vmap_app_inspect_row extends $.$bog_vmap_app_inspect_row {
+        path(): string;
+        share_here(): boolean;
+        mark_here(): string;
+        share_click(next?: Event | null): null;
+        unshare_click(next?: Event | null): null;
+        mark_sub(): readonly $mol_view_content[];
         tools(): readonly $mol_view[];
         content(): readonly $mol_view_content[];
     }
@@ -54102,152 +54317,237 @@ declare namespace $ {
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_7 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect['flex_value'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_flex['value'] >
-	>
-	type $bog_vmap_app_inspect_flex__editable_bog_vmap_app_inspect_8 = $mol_type_enforce<
-		ReturnType< $bog_vmap_app_inspect['editable'] >
-		,
-		ReturnType< $bog_vmap_app_inspect_flex['editable'] >
-	>
-	type $mol_list__rows_bog_vmap_app_inspect_9 = $mol_type_enforce<
+	type $mol_list__rows_bog_vmap_app_inspect_7 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['rows'] >
 		,
 		ReturnType< $mol_list['rows'] >
 	>
-	type $mol_expander__title_bog_vmap_app_inspect_10 = $mol_type_enforce<
+	type $mol_expander__title_bog_vmap_app_inspect_8 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_expander['title'] >
 	>
-	type $mol_expander__expanded_bog_vmap_app_inspect_11 = $mol_type_enforce<
+	type $mol_expander__expanded_bog_vmap_app_inspect_9 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['shares_shown'] >
+		,
+		ReturnType< $mol_expander['expanded'] >
+	>
+	type $mol_expander__content_bog_vmap_app_inspect_10 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_rows'] >
+		,
+		ReturnType< $mol_expander['content'] >
+	>
+	type $bog_vmap_app_inspect_flex__value_bog_vmap_app_inspect_11 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['flex_value'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex['value'] >
+	>
+	type $bog_vmap_app_inspect_flex__editable_bog_vmap_app_inspect_12 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['editable'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_flex['editable'] >
+	>
+	type $mol_expander__title_bog_vmap_app_inspect_13 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_expander['title'] >
+	>
+	type $mol_expander__expanded_bog_vmap_app_inspect_14 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['layout_shown'] >
+		,
+		ReturnType< $mol_expander['expanded'] >
+	>
+	type $mol_expander__content_bog_vmap_app_inspect_15 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_expander['content'] >
+	>
+	type $mol_expander__title_bog_vmap_app_inspect_16 = $mol_type_enforce<
+		string
+		,
+		ReturnType< $mol_expander['title'] >
+	>
+	type $mol_expander__expanded_bog_vmap_app_inspect_17 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['inherited_shown'] >
 		,
 		ReturnType< $mol_expander['expanded'] >
 	>
-	type $mol_expander__content_bog_vmap_app_inspect_12 = $mol_type_enforce<
+	type $mol_expander__content_bog_vmap_app_inspect_18 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['inherited_rows'] >
 		,
 		ReturnType< $mol_expander['content'] >
 	>
-	type $mol_select__hint_bog_vmap_app_inspect_13 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_value__tree_bog_vmap_app_inspect_19 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_value'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['tree'] >
+	>
+	type $bog_vmap_app_inspect_value__binds_bog_vmap_app_inspect_20 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['binds'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['binds'] >
+	>
+	type $bog_vmap_app_inspect_value__nodes_bog_vmap_app_inspect_21 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['nodes'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['nodes'] >
+	>
+	type $bog_vmap_app_inspect_value__editable_bog_vmap_app_inspect_22 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['editable'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_value['editable'] >
+	>
+	type $mol_select__hint_bog_vmap_app_inspect_23 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_select['hint'] >
 	>
-	type $mol_select__enabled_bog_vmap_app_inspect_14 = $mol_type_enforce<
+	type $mol_select__enabled_bog_vmap_app_inspect_24 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 		,
 		ReturnType< $mol_select['enabled'] >
 	>
-	type $mol_select__value_bog_vmap_app_inspect_15 = $mol_type_enforce<
+	type $mol_select__value_bog_vmap_app_inspect_25 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['base'] >
 		,
 		ReturnType< $mol_select['value'] >
 	>
-	type $mol_select__options_bog_vmap_app_inspect_16 = $mol_type_enforce<
+	type $mol_select__options_bog_vmap_app_inspect_26 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['bases'] >
 		,
 		ReturnType< $mol_select['options'] >
 	>
-	type $mol_select__dictionary_bog_vmap_app_inspect_17 = $mol_type_enforce<
+	type $mol_select__dictionary_bog_vmap_app_inspect_27 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['base_titles'] >
 		,
 		ReturnType< $mol_select['dictionary'] >
 	>
-	type $mol_select__filter_hint_bog_vmap_app_inspect_18 = $mol_type_enforce<
+	type $mol_select__filter_hint_bog_vmap_app_inspect_28 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_select['filter_hint'] >
 	>
-	type $mol_select__submit_bog_vmap_app_inspect_19 = $mol_type_enforce<
+	type $mol_select__submit_bog_vmap_app_inspect_29 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['base_submit'] >
 		,
 		ReturnType< $mol_select['submit'] >
 	>
-	type $mol_status__status_bog_vmap_app_inspect_20 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_inspect_30 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['empty_note'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_21 = $mol_type_enforce<
+	type $bog_vmap_lang_node__source_bog_vmap_app_inspect_31 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['source'] >
 		,
 		ReturnType< $bog_vmap_lang_node['source'] >
 	>
-	type $bog_vmap_lib__pack_bog_vmap_app_inspect_22 = $mol_type_enforce<
+	type $bog_vmap_lib__pack_bog_vmap_app_inspect_32 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['pack'] >
 		,
 		ReturnType< $bog_vmap_lib['pack'] >
 	>
-	type $bog_vmap_lib__classes_bog_vmap_app_inspect_23 = $mol_type_enforce<
+	type $bog_vmap_lib__classes_bog_vmap_app_inspect_33 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['classes'] >
 		,
 		ReturnType< $bog_vmap_lib['classes'] >
 	>
-	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_24 = $mol_type_enforce<
+	type $mol_form_field__name_bog_vmap_app_inspect_34 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_row_name'] >
+		,
+		ReturnType< $mol_form_field['name'] >
+	>
+	type $mol_form_field__bids_bog_vmap_app_inspect_35 = $mol_type_enforce<
+		readonly(any)[]
+		,
+		ReturnType< $mol_form_field['bids'] >
+	>
+	type $mol_form_field__control_bog_vmap_app_inspect_36 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['Share_value'] >
+		,
+		ReturnType< $mol_form_field['control'] >
+	>
+	type $bog_vmap_app_inspect_row__sign_bog_vmap_app_inspect_37 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_sign'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['sign'] >
 	>
-	type $bog_vmap_app_inspect_row__drop_hint_bog_vmap_app_inspect_25 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__drop_hint_bog_vmap_app_inspect_38 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_drop_hint'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop_hint'] >
 	>
-	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_26 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__owner_bog_vmap_app_inspect_39 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_owner'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['owner'] >
 	>
-	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_27 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__inherited_bog_vmap_app_inspect_40 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_inherited'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['inherited'] >
 	>
-	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_28 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__value_bog_vmap_app_inspect_41 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_value'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['value'] >
 	>
-	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_29 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__keyed_bog_vmap_app_inspect_42 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_keyed'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['keyed'] >
 	>
-	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_30 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__changeable_bog_vmap_app_inspect_43 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_changeable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['changeable'] >
 	>
-	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_31 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__drop_bog_vmap_app_inspect_44 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_drop'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['drop'] >
 	>
-	type $bog_vmap_app_inspect_row__frozen_bog_vmap_app_inspect_32 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__frozen_bog_vmap_app_inspect_45 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_frozen'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['frozen'] >
 	>
-	type $bog_vmap_app_inspect_row__note_bog_vmap_app_inspect_33 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__note_bog_vmap_app_inspect_46 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['row_note'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['note'] >
 	>
-	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_34 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__share_able_bog_vmap_app_inspect_47 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_able'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_row['share_able'] >
+	>
+	type $bog_vmap_app_inspect_row__share_mark_bog_vmap_app_inspect_48 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_mark'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_row['share_mark'] >
+	>
+	type $bog_vmap_app_inspect_row__share_bog_vmap_app_inspect_49 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_row['share'] >
+	>
+	type $bog_vmap_app_inspect_row__share_unshare_bog_vmap_app_inspect_50 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app_inspect['share_unshare'] >
+		,
+		ReturnType< $bog_vmap_app_inspect_row['share_unshare'] >
+	>
+	type $bog_vmap_app_inspect_row__binds_bog_vmap_app_inspect_51 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['binds'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['binds'] >
 	>
-	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_35 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__nodes_bog_vmap_app_inspect_52 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['nodes'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['nodes'] >
 	>
-	type $bog_vmap_app_inspect_row__editable_bog_vmap_app_inspect_36 = $mol_type_enforce<
+	type $bog_vmap_app_inspect_row__editable_bog_vmap_app_inspect_53 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect_row['editable'] >
@@ -54260,15 +54560,24 @@ declare namespace $ {
 		base_pick( ): any
 		total( ): string
 		Note( ): $mol_status
-		flex_value( id: any, next?: string ): string
-		Flex( ): $bog_vmap_app_inspect_flex
 		rows( ): readonly($mol_view)[]
 		Rows( ): $mol_list
+		shares_shown( next?: boolean ): boolean
+		share_rows( ): readonly($mol_view)[]
+		Shares( ): $mol_expander
+		layout_shown( next?: boolean ): boolean
+		flex_value( id: any, next?: string ): string
+		Flex( ): $bog_vmap_app_inspect_flex
+		Layout( ): $mol_expander
 		inherited_shown( next?: boolean ): boolean
 		inherited_rows( ): readonly($mol_view)[]
 		Inherited( ): $mol_expander
 		empty_note( ): string
 		classes( ): readonly(any)[]
+		share_row_name( id: any): string
+		share_uses( id: any): string
+		share_value( id: any, next?: $mol_tree2_empty ): $mol_tree2_empty
+		Share_value( id: any): $bog_vmap_app_inspect_value
 		row_sign( id: any): string
 		row_drop_hint( id: any): string
 		row_owner( id: any): string
@@ -54304,6 +54613,12 @@ declare namespace $ {
 		Lib( ): $bog_vmap_lib
 		resettable( id: any): boolean
 		reset( id: any, next?: any ): any
+		share_able( id: any): boolean
+		share_mark( id: any): string
+		share( id: any, next?: any ): any
+		share_unshare( id: any, next?: any ): any
+		shares( ): readonly(string)[]
+		Share_row( id: any): $mol_form_field
 		Row( id: any): $bog_vmap_app_inspect_row
 	}
 	
@@ -54386,10 +54701,10 @@ declare namespace $.$$ {
         title_draft(name: string, next?: string): string;
         title_value(next?: string): string;
         title_submit(event?: Event): void;
-        body(): readonly $mol_view[];
         tools(): readonly $mol_view_content[];
         class_ready(): boolean;
         base_title(): string;
+        layout_shown(next?: boolean): boolean;
         base_pick(): $mol_view_content;
         base_submit(next?: Event | null): null;
         ports(): Map<string, $mol_tree2>;
@@ -54406,6 +54721,9 @@ declare namespace $.$$ {
         row_note(name: string): string;
         row_inherited(name: string): boolean;
         binds(): string[];
+        share_row_name(name: string): string;
+        share_rows(): $.$mol_form_field[];
+        body(): readonly $mol_view[];
         nodes(): Record<string, {
             klass: string;
             ports: readonly string[];
@@ -55890,197 +56208,232 @@ declare namespace $ {
 		,
 		ReturnType< $bog_vmap_app_inspect['reset'] >
 	>
-	type $bog_vmap_app_inspect__editable_bog_vmap_app_162 = $mol_type_enforce<
+	type $bog_vmap_app_inspect__share_able_bog_vmap_app_162 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share_able'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share_able'] >
+	>
+	type $bog_vmap_app_inspect__share_mark_bog_vmap_app_163 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share_mark'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share_mark'] >
+	>
+	type $bog_vmap_app_inspect__share_bog_vmap_app_164 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share'] >
+	>
+	type $bog_vmap_app_inspect__share_unshare_bog_vmap_app_165 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share_unshare'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share_unshare'] >
+	>
+	type $bog_vmap_app_inspect__shares_bog_vmap_app_166 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_shares'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['shares'] >
+	>
+	type $bog_vmap_app_inspect__share_uses_bog_vmap_app_167 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share_uses'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share_uses'] >
+	>
+	type $bog_vmap_app_inspect__share_value_bog_vmap_app_168 = $mol_type_enforce<
+		ReturnType< $bog_vmap_app['node_share_value'] >
+		,
+		ReturnType< $bog_vmap_app_inspect['share_value'] >
+	>
+	type $bog_vmap_app_inspect__editable_bog_vmap_app_169 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_inspect['editable'] >
 	>
-	type $mol_page__title_bog_vmap_app_163 = $mol_type_enforce<
+	type $mol_page__title_bog_vmap_app_170 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_page['title'] >
 	>
-	type $mol_page__body_bog_vmap_app_164 = $mol_type_enforce<
+	type $mol_page__body_bog_vmap_app_171 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_page['body'] >
 	>
-	type $bog_vmap_app_code__klass_bog_vmap_app_165 = $mol_type_enforce<
+	type $bog_vmap_app_code__klass_bog_vmap_app_172 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_klass'] >
 		,
 		ReturnType< $bog_vmap_app_code['klass'] >
 	>
-	type $bog_vmap_app_code__prop_bog_vmap_app_166 = $mol_type_enforce<
+	type $bog_vmap_app_code__prop_bog_vmap_app_173 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_prop'] >
 		,
 		ReturnType< $bog_vmap_app_code['prop'] >
 	>
-	type $bog_vmap_app_code__hooks_bog_vmap_app_167 = $mol_type_enforce<
+	type $bog_vmap_app_code__hooks_bog_vmap_app_174 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_hooks'] >
 		,
 		ReturnType< $bog_vmap_app_code['hooks'] >
 	>
-	type $bog_vmap_app_code__whole_bog_vmap_app_168 = $mol_type_enforce<
+	type $bog_vmap_app_code__whole_bog_vmap_app_175 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_whole'] >
 		,
 		ReturnType< $bog_vmap_app_code['whole'] >
 	>
-	type $bog_vmap_app_code__source_bog_vmap_app_169 = $mol_type_enforce<
+	type $bog_vmap_app_code__source_bog_vmap_app_176 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['source'] >
 	>
-	type $bog_vmap_app_code__node_source_bog_vmap_app_170 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_source_bog_vmap_app_177 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_source'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_source'] >
 	>
-	type $bog_vmap_app_code__js_bog_vmap_app_171 = $mol_type_enforce<
+	type $bog_vmap_app_code__js_bog_vmap_app_178 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_js'] >
 		,
 		ReturnType< $bog_vmap_app_code['js'] >
 	>
-	type $bog_vmap_app_code__css_bog_vmap_app_172 = $mol_type_enforce<
+	type $bog_vmap_app_code__css_bog_vmap_app_179 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_css'] >
 		,
 		ReturnType< $bog_vmap_app_code['css'] >
 	>
-	type $bog_vmap_app_code__error_bog_vmap_app_173 = $mol_type_enforce<
+	type $bog_vmap_app_code__error_bog_vmap_app_180 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_error'] >
 		,
 		ReturnType< $bog_vmap_app_code['error'] >
 	>
-	type $bog_vmap_app_code__node_note_bog_vmap_app_174 = $mol_type_enforce<
+	type $bog_vmap_app_code__node_note_bog_vmap_app_181 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['code_node_note'] >
 		,
 		ReturnType< $bog_vmap_app_code['node_note'] >
 	>
-	type $bog_vmap_app_code__editable_bog_vmap_app_175 = $mol_type_enforce<
+	type $bog_vmap_app_code__editable_bog_vmap_app_182 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['node_editable'] >
 		,
 		ReturnType< $bog_vmap_app_code['editable'] >
 	>
-	type $mol_chip__title_bog_vmap_app_176 = $mol_type_enforce<
+	type $mol_chip__title_bog_vmap_app_183 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['title'] >
 	>
-	type $mol_chip__hint_bog_vmap_app_177 = $mol_type_enforce<
+	type $mol_chip__hint_bog_vmap_app_184 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_chip['hint'] >
 	>
-	type $bog_vmap_app_history__Title_bog_vmap_app_178 = $mol_type_enforce<
+	type $bog_vmap_app_history__Title_bog_vmap_app_185 = $mol_type_enforce<
 		any
 		,
 		ReturnType< $bog_vmap_app_history['Title'] >
 	>
-	type $bog_vmap_app_history__store_bog_vmap_app_179 = $mol_type_enforce<
+	type $bog_vmap_app_history__store_bog_vmap_app_186 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['store'] >
 		,
 		ReturnType< $bog_vmap_app_history['store'] >
 	>
-	type $bog_vmap_app_history__state_bog_vmap_app_180 = $mol_type_enforce<
+	type $bog_vmap_app_history__state_bog_vmap_app_187 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['history_state'] >
 		,
 		ReturnType< $bog_vmap_app_history['state'] >
 	>
-	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_181 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__pack_bog_vmap_app_188 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_link'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['pack'] >
 	>
-	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_182 = $mol_type_enforce<
+	type $bog_vmap_lib_land_stack__lands_bog_vmap_app_189 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['lands'] >
 		,
 		ReturnType< $bog_vmap_lib_land_stack['lands'] >
 	>
-	type $mol_status__status_bog_vmap_app_183 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_190 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['status'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_184 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_191 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['notes'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_185 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_192 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_title'] >
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_186 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_193 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_187 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_194 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['zoom_full'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_status__status_bog_vmap_app_188 = $mol_type_enforce<
+	type $mol_status__status_bog_vmap_app_195 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['error'] >
 		,
 		ReturnType< $mol_status['status'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_189 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_196 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['inside_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_190 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_197 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['root_title_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_191 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_198 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['export_text'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_bar__sub_bog_vmap_app_192 = $mol_type_enforce<
+	type $mol_bar__sub_bog_vmap_app_199 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_content'] >
 		,
 		ReturnType< $mol_bar['sub'] >
 	>
-	type $mol_paragraph__title_bog_vmap_app_193 = $mol_type_enforce<
+	type $mol_paragraph__title_bog_vmap_app_200 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['stall_note'] >
 		,
 		ReturnType< $mol_paragraph['title'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_194 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_201 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_195 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_202 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_196 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_203 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['pack_default'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_button_minor__title_bog_vmap_app_197 = $mol_type_enforce<
+	type $mol_button_minor__title_bog_vmap_app_204 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['title'] >
 	>
-	type $mol_button_minor__hint_bog_vmap_app_198 = $mol_type_enforce<
+	type $mol_button_minor__hint_bog_vmap_app_205 = $mol_type_enforce<
 		string
 		,
 		ReturnType< $mol_button_minor['hint'] >
 	>
-	type $mol_button_minor__click_bog_vmap_app_199 = $mol_type_enforce<
+	type $mol_button_minor__click_bog_vmap_app_206 = $mol_type_enforce<
 		ReturnType< $bog_vmap_app['scene_restart'] >
 		,
 		ReturnType< $mol_button_minor['click'] >
 	>
-	type $mol_view__style_bog_vmap_app_200 = $mol_type_enforce<
+	type $mol_view__style_bog_vmap_app_207 = $mol_type_enforce<
 		({ 
 			'left': ReturnType< $bog_vmap_app['ghost_left'] >,
 			'top': ReturnType< $bog_vmap_app['ghost_top'] >,
@@ -56088,7 +56441,7 @@ declare namespace $ {
 		,
 		ReturnType< $mol_view['style'] >
 	>
-	type $mol_view__sub_bog_vmap_app_201 = $mol_type_enforce<
+	type $mol_view__sub_bog_vmap_app_208 = $mol_type_enforce<
 		readonly(any)[]
 		,
 		ReturnType< $mol_view['sub'] >
@@ -56212,6 +56565,13 @@ declare namespace $ {
 		node_cell( id: any, next?: any ): any
 		node_resettable( id: any): boolean
 		node_reset( id: any, next?: any ): any
+		node_share_able( id: any): boolean
+		node_share_mark( id: any): string
+		node_share( id: any, next?: any ): any
+		node_share_unshare( id: any, next?: any ): any
+		node_shares( ): readonly(string)[]
+		node_share_uses( id: any): string
+		node_share_value( id: any, next?: $mol_tree2_empty ): $mol_tree2_empty
 		node_editable( ): boolean
 		idle_note( ): string
 		Idle_note( ): $mol_paragraph
@@ -56642,6 +57002,37 @@ declare namespace $.$$ {
         node_base_note_at(name: string, next?: string): string;
         node_base(next?: string): string;
         base_swap(part: string, klass: string, dropped: readonly string[]): void;
+        node_share_able(path: string): boolean;
+        node_share_mark(path: string): string;
+        node_share(path: string, next?: Event | null): null;
+        node_share_unshare(path: string, next?: Event | null): null;
+        node_shares(): string[];
+        node_share_uses(name: string): string;
+        node_share_value(name: string, next?: $mol_tree2): $mol_tree2;
+        share_names(): string[];
+        share_uses(name: string): string[];
+        share_spot(path: string): {
+            prop: string;
+            key: string;
+        };
+        share_at(part: string, path: string): $mol_tree2 | null;
+        share_ref(path: string): string;
+        share_able(path: string): boolean;
+        share_write(node: $bog_vmap_lang_node, part: string, path: string, value: $mol_tree2): boolean;
+        share_make(path: string): null;
+        share_unlink(path: string): null;
+        share_same(name: string, path: string): readonly string[];
+        share_link(name: string, path: string): null;
+        share_made(next?: {
+            readonly source: string;
+            readonly name: string;
+            readonly path: string;
+        } | null): {
+            readonly source: string;
+            readonly name: string;
+            readonly path: string;
+        } | null;
+        share_offer(): string;
         group_names(): string[];
         group_ready(name: string): boolean;
         ungroup_enabled(): boolean;

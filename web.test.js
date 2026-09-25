@@ -19476,6 +19476,7 @@ var $;
             $mol_assert_equal(stage.app.doc_source().includes('\t\tsub /\n\t\t\t<= Calc\n\t\t\t<= Map\n'), true);
             stage.tap(inside(200, 250));
             $mol_assert_equal(stage.app.selected(), 'Page');
+            stage.click(stage.check('Раскладка'));
             stage.click(stage.check('рядом'));
             $mol_assert_ok(stage.app.doc_source().includes('flexDirection \\row'));
             $mol_assert_equal(stage.scene.last('doc_set').src, stage.app.doc_source());
@@ -21109,6 +21110,181 @@ var $;
         },
     });
 })($ || ($ = {}));
+(function ($_9) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const styled = (stage, part, key) => {
+        const dict = stage.app.node().over_tree(part, 'style')?.kids[0] ?? null;
+        return $bog_vmap_lang_dict_get(dict, key)?.toString().trim() ?? '';
+    };
+    const board = (stage, x) => {
+        stage.app.board_draw({ x, y: 40, width: 200, height: 120 });
+        stage.redraw();
+        return stage.app.selected();
+    };
+    $mol_test({
+        'a value made shared leaves a reference behind and is declared once'($) {
+            const stage = $_9.$bog_vmap_app_flow_stage($);
+            const one = board(stage, 40);
+            $mol_assert_equal(stage.app.share_able('style/background'), true);
+            $mol_assert_like(stage.app.share_names(), []);
+            stage.app.share_make('style/background');
+            stage.redraw();
+            const names = stage.app.share_names();
+            $mol_assert_equal(names.length, 1);
+            $mol_assert_equal(names[0], 'background');
+            $mol_assert_equal(styled(stage, one, 'background'), '<= background');
+            $mol_assert_like(stage.app.share_uses('background'), [one]);
+            $mol_assert_equal(stage.app.share_ref('style/background'), 'background');
+            $mol_assert_equal(stage.app.share_able('style/background'), false);
+            $mol_assert_equal((stage.app.doc_source().match(/var\(--mol_theme_back\)/g) ?? []).length, 1);
+        },
+        'the offer names the nodes with the same value and links them only when asked'($) {
+            const stage = $_9.$bog_vmap_app_flow_stage($);
+            const one = board(stage, 40);
+            const two = board(stage, 400);
+            stage.app.selected(one);
+            stage.app.share_make('style/background');
+            stage.redraw();
+            $mol_assert_like(stage.app.share_same('background', 'style/background'), [two]);
+            $mol_assert_ok(stage.app.share_offer().includes('ещё у 1 узла'));
+            $mol_assert_ok(stage.app.share_offer().includes(two));
+            $mol_assert_equal(styled(stage, two, 'background'), '\\var(--mol_theme_back)');
+            stage.app.share_link('background', 'style/background');
+            stage.redraw();
+            $mol_assert_equal(styled(stage, two, 'background'), '<= background');
+            $mol_assert_like(stage.app.share_uses('background'), [one, two]);
+            $mol_assert_equal(stage.app.share_offer(), '');
+        },
+        'unlinking puts the value back and takes the shared name away when nobody holds it'($) {
+            const stage = $_9.$bog_vmap_app_flow_stage($);
+            const one = board(stage, 40);
+            const two = board(stage, 400);
+            stage.app.selected(one);
+            stage.app.share_make('style/background');
+            stage.app.share_link('background', 'style/background');
+            stage.redraw();
+            stage.app.selected(two);
+            stage.app.share_unlink('style/background');
+            stage.redraw();
+            $mol_assert_equal(styled(stage, two, 'background'), '\\var(--mol_theme_back)');
+            $mol_assert_like(stage.app.share_uses('background'), [one]);
+            $mol_assert_like(stage.app.share_names(), ['background']);
+            stage.app.selected(one);
+            stage.app.share_unlink('style/background');
+            stage.redraw();
+            $mol_assert_equal(styled(stage, one, 'background'), '\\var(--mol_theme_back)');
+            $mol_assert_like(stage.app.share_names(), []);
+        },
+        'a shared name is not a cell, not a wire and not a part'($) {
+            const stage = $_9.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            const node = stage.app.node();
+            const tree = node.tree();
+            node.cell_bind('Calc', 'op?', tree.data('plus'));
+            stage.redraw();
+            $mol_assert_ok(stage.app.node().prop_names().includes('calc_op'));
+            $mol_assert_equal(stage.app.share_names().includes('calc_op'), false);
+            $mol_assert_equal(stage.app.share_names().includes('Calc'), false);
+            stage.app.selected('Calc');
+            stage.app.share_make('title');
+            stage.redraw();
+            $mol_assert_equal(stage.app.share_names().includes('calc_op'), false);
+        },
+    });
+})($ || ($ = {}));
+(function ($_10) {
+    const entry = (stage, key) => {
+        const seq = stage.app.Inspect().Row('style').Value().Seq();
+        const at = seq.items().findIndex((_, i) => seq.item_key(i) === key);
+        return seq.Item(at);
+    };
+    $mol_test({
+        'the button by a style value makes it shared and the row says so'($) {
+            const stage = $_10.$bog_vmap_app_flow_stage($);
+            stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 });
+            stage.redraw();
+            stage.click(stage.check('Дизайн'));
+            const one = entry(stage, 'background');
+            $mol_assert_equal(one.path(), 'style/background');
+            $mol_assert_equal(one.share_here(), true);
+            $mol_assert_equal(one.mark_here(), '');
+            $mol_assert_ok(one.item_sub().includes(one.Share()));
+            stage.click(one.Share().dom_node());
+            stage.redraw();
+            const after = entry(stage, 'background');
+            $mol_assert_equal(after.share_here(), false);
+            $mol_assert_equal(after.mark_here(), 'общее «background», узлов 1');
+            $mol_assert_ok(after.item_sub().includes(after.Unshare()));
+            $mol_assert_ok(stage.app.doc_source().includes('background <= background'));
+            $mol_assert_ok(after.dom_node().textContent.includes('общее «background», узлов 1'));
+            stage.click(after.Unshare().dom_node());
+            stage.redraw();
+            $mol_assert_equal(entry(stage, 'background').mark_here(), '');
+            $mol_assert_equal(stage.app.doc_source().includes('<= background'), false);
+            $mol_assert_like(stage.app.share_names(), []);
+        },
+        'the count in the mark follows the nodes that hold the shared value'($) {
+            const stage = $_10.$bog_vmap_app_flow_stage($);
+            stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 });
+            stage.redraw();
+            const one = stage.app.selected();
+            stage.app.board_draw({ x: 400, y: 40, width: 200, height: 120 });
+            stage.redraw();
+            stage.app.selected(one);
+            stage.click(stage.check('Дизайн'));
+            stage.redraw();
+            stage.click(entry(stage, 'background').Share().dom_node());
+            stage.redraw();
+            $mol_assert_equal(entry(stage, 'background').mark_here(), 'общее «background», узлов 1');
+            $mol_assert_ok(stage.app.status().includes('Связать с общим'));
+            stage.app.share_link('background', 'style/background');
+            stage.redraw();
+            $mol_assert_equal(entry(stage, 'background').mark_here(), 'общее «background», узлов 2');
+        },
+    });
+})($ || ($ = {}));
+(function ($_11) {
+    const shared = (stage, key) => {
+        const seq = stage.app.Inspect().Row('style').Value().Seq();
+        const at = seq.items().findIndex((_, i) => seq.item_key(i) === key);
+        stage.click(seq.Item(at).Share().dom_node());
+        stage.redraw();
+    };
+    $mol_test({
+        'the shared values wait in their own section and are edited there'($) {
+            const stage = $_11.$bog_vmap_app_flow_stage($);
+            const inspect = stage.app.Inspect();
+            stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 });
+            stage.redraw();
+            stage.click(stage.check('Дизайн'));
+            $mol_assert_equal(inspect.body().includes(inspect.Shares()), false);
+            shared(stage, 'background');
+            $mol_assert_like(inspect.shares(), ['background']);
+            $mol_assert_ok(inspect.body().includes(inspect.Shares()));
+            $mol_assert_equal(inspect.Shares().title(), 'Общие значения');
+            $mol_assert_like(inspect.share_rows(), [inspect.Share_row('background')]);
+            $mol_assert_equal(inspect.share_row_name('background'), 'background');
+            $mol_assert_ok(inspect.share_uses('background').includes('узлов 1'));
+            const value = stage.app.node().tree().data('#123456');
+            inspect.share_value('background', value);
+            stage.redraw();
+            $mol_assert_ok(stage.app.doc_source().includes('background \\#123456'));
+            $mol_assert_ok(stage.app.doc_source().includes('background <= background'));
+        },
+        'a shared name can be picked as the target of a reference'($) {
+            const stage = $_11.$bog_vmap_app_flow_stage($);
+            const inspect = stage.app.Inspect();
+            stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 });
+            stage.redraw();
+            stage.click(stage.check('Дизайн'));
+            $mol_assert_equal(inspect.binds().includes('background'), false);
+            shared(stage, 'background');
+            $mol_assert_ok(inspect.binds().includes('background'));
+            $mol_assert_ok(inspect.binds().includes('style'));
+        },
+    });
+})($ || ($ = {}));
 
 ;
 "use strict";
@@ -21313,9 +21489,27 @@ var $;
             $mol_assert_equal(one.body_content().length, 1);
             $mol_assert_equal(one.body_content()[0], one.Body_content());
             const body = one.body();
-            $mol_assert_equal(body.includes(one.Flex()), true);
+            $mol_assert_equal(body.includes(one.Layout()), true);
             $mol_assert_equal(body.includes(one.Rows()), true);
             $mol_assert_equal(body.includes(one.Inherited()), true);
+            $mol_assert_equal(one.Layout().content().includes(one.Flex()), true);
+        },
+        'the properties come first and the layout presets wait folded under their own name'($) {
+            const one = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            const body = one.body();
+            $mol_assert_equal(body[0], one.Rows());
+            $mol_assert_equal(body.indexOf(one.Layout()) > 0, true);
+            $mol_assert_equal(one.Layout().title(), 'Раскладка');
+            $mol_assert_equal(one.layout_shown(), false);
+            $mol_assert_equal(one.Layout().rows().includes(one.Layout().Content()), false);
+            one.layout_shown(true);
+            $mol_assert_equal(one.Layout().rows().includes(one.Layout().Content()), true);
+            $mol_assert_equal(one.Layout().content().includes(one.Flex()), true);
+            $mol_assert_equal(one.layout_shown(), true);
+            const again = panel($, `${d}my_card ${d}mol_view\n\ttitle \\Hi\n`);
+            $mol_assert_equal(again.layout_shown(), true);
+            again.layout_shown(false);
+            $mol_assert_equal(panel($, `${d}my_card ${d}mol_view\n`).layout_shown(), false);
         },
         'every property row is a form field labelled by the signature'($) {
             const one = panel($, [
