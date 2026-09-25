@@ -1395,6 +1395,9 @@ namespace $.$$ {
 			const reset = this.reset_note()
 			if( reset ) return reset
 
+			const base = this.base_note()
+			if( base ) return base
+
 			if( this.Pane().warmed() ) return 'сцена на связи'
 			return this.Pane().pack_note() || 'ожидание сцены…'
 		}
@@ -1868,11 +1871,15 @@ namespace $.$$ {
 			return sign.replace( /[?*]+$/, '' )
 		}
 
-		over_known( part: string, prop: string ) {
-			const props = this.class_props( this.node_class( part ) )
+		class_knows( klass: string, prop: string ) {
+			const props = this.class_props( klass )
 			if( !props ) return false
 
 			return props.has( prop ) || props.has( prop + '?' ) || props.has( prop + '*' )
+		}
+
+		over_known( part: string, prop: string ) {
+			return this.class_knows( this.node_class( part ), prop )
 		}
 
 		over_wired( part: string, prop: string ) {
@@ -2002,6 +2009,163 @@ namespace $.$$ {
 			if( this.doc_source() !== made.source ) return ''
 
 			return 'Провода и свои свойства остались, сброс вернул только то, что предлагает деталь'
+		}
+
+		base_offers(): readonly { readonly klass: string, readonly title: string }[] {
+			try {
+				return this.Shelf().class_offers()
+			} catch( error: unknown ) {
+				if( !$mol_promise_like( error ) ) $mol_fail_log( error )
+				return []
+			}
+		}
+
+		override node_bases() {
+			return this.base_offers().map( offer => offer.klass )
+		}
+
+		override node_base_titles() {
+
+			const titles = {} as { [ klass: string ]: string }
+
+			for( const offer of this.base_offers() ) titles[ offer.klass ] = offer.title
+
+			return titles
+		}
+
+		base_listed( klass: string ) {
+			try {
+				return this.Lib().class_list().includes( klass )
+			} catch( error: unknown ) {
+				if( $mol_promise_like( error ) ) return $mol_fail_hidden( error )
+				$mol_fail_log( error )
+				return false
+			}
+		}
+
+		base_plan( part: string, klass: string ) {
+
+			const node = this.node()
+
+			const kept = [] as string[]
+			const dropped = [] as string[]
+			const wires_in = [] as string[]
+			const wires_out = [] as string[]
+
+			for( const prop of this.over_names( part ) ) {
+
+				if( prop === 'sub' ) { kept.push( prop ); continue }
+				if( this.class_knows( klass, prop ) ) { kept.push( prop ); continue }
+				if( !this.over_known( part, prop ) ) { kept.push( prop ); continue }
+				if( this.over_wired( part, prop ) ) continue
+
+				dropped.push( prop )
+			}
+
+			for( const link of node.links() ) {
+				if( link.to !== part ) continue
+				if( this.class_knows( klass, link.to_prop ) ) continue
+				wires_in.push( link.to_prop )
+			}
+
+			for( const wire of node.wires() ) {
+				if( wire.node !== part ) continue
+				if( this.class_knows( klass, wire.prop ) ) continue
+				wires_out.push( wire.prop )
+			}
+
+			return { kept, dropped, wires_in, wires_out }
+		}
+
+		base_wires_note( part: string, klass: string, plan: ReturnType< $bog_vmap_app[ 'base_plan' ] > ) {
+
+			const node = this.node()
+			const bits = [] as string[]
+
+			for( const prop of plan.wires_in ) {
+				const link = node.links().find( one => one.to === part && one.to_prop === prop )
+				const from = link ? `${ link.from }.${ link.from_prop }` : 'другого узла'
+				bits.push( `входящий в «${ prop }» от ${ from }` )
+			}
+
+			for( const prop of plan.wires_out ) {
+				bits.push( `исходящий из «${ prop }»` )
+			}
+
+			return `Класс ${ klass } не знает свойств, на которых висят провода: ${ bits.join( ', ' ) }.`
+				+ ' Отсоедините их и повторите замену'
+		}
+
+		base_few( names: readonly string[], shown = 3 ) {
+			if( names.length <= shown ) return names.join( ', ' )
+			return `${ names.slice( 0, shown ).join( ', ' ) } и ещё ${ names.length - shown }`
+		}
+
+		@ $mol_mem
+		base_made( next?: { readonly source: string, readonly klass: string, readonly dropped: readonly string[] } | null ) {
+			return next ?? null
+		}
+
+		base_note() {
+
+			const made = this.base_made()
+			if( !made ) return ''
+			if( this.doc_source() !== made.source ) return ''
+
+			if( !made.dropped.length ) return `Класс заменён на ${ made.klass }, переопределения сохранены`
+
+			return `Класс заменён на ${ made.klass }, снято переопределений: ${ made.dropped.length }`
+				+ ` (${ this.base_few( made.dropped ) })`
+		}
+
+		@ $mol_mem_key
+		node_base_note_at( name: string, next?: string ) {
+			return next ?? ''
+		}
+
+		override node_base( next?: string ) {
+
+			const part = this.selected()
+			if( this.inner() || !part ) return ''
+
+			const node = this.node()
+			const klass = node.part_class( part )
+
+			if( next === undefined || !next || next === klass ) return klass
+			if( !this.editable() ) return klass
+
+			if( !this.base_listed( next ) ) {
+				this.node_base_note_at( part, `Класса «${ next }» нет в паке деталей ${ this.pack_link() }` )
+				return klass
+			}
+
+			const plan = this.base_plan( part, next )
+
+			if( plan.wires_in.length || plan.wires_out.length ) {
+				this.node_base_note_at( part, this.base_wires_note( part, next, plan ) )
+				return klass
+			}
+
+			this.base_swap( part, next, plan.dropped )
+
+			this.node_base_note_at( part, '' )
+			this.base_made({ source: this.doc_source(), klass: next, dropped: plan.dropped })
+
+			return next
+		}
+
+		@ $mol_action
+		base_swap( part: string, klass: string, dropped: readonly string[] ) {
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			node.part_class( part, klass )
+
+			for( const prop of dropped ) this.reset_one( node, part, prop )
+
+			this.node().tree( node.tree() )
+
 		}
 
 		group_names() {
@@ -2246,6 +2410,10 @@ namespace $.$$ {
 			if( this.inner_foreign() ) return this.inner_foreign_note()
 
 			const name = this.selected() ?? ''
+
+			const base = this.node_base_note_at( name )
+			if( base ) return base
+
 			const note = this.node_title_note_at( name )
 
 			return note ? `${ note }. Узел по-прежнему называется «${ name }»` : ''

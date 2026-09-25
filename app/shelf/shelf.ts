@@ -39,6 +39,21 @@ namespace $ {
 		return `${ $bog_vmap_app_shelf_head }\n\t${ name } ${ klass }\n\tsub /\n\t\t<= ${ name }\n`
 	}
 
+	export function $bog_vmap_app_shelf_lone( this: $, source: string ) {
+
+		const preset = $bog_vmap_lang_node.make({
+			$: this,
+			source: ()=> source,
+		})
+
+		const parts = preset.part_names()
+		if( parts.length !== 1 ) return ''
+
+		const klass = preset.prop_decl( parts[ 0 ] )?.kids[ 0 ]
+
+		return klass && this.$mol_view_tree2_class_match( klass ) ? klass.type : ''
+	}
+
 	function $bog_vmap_app_shelf_inputs(): readonly $bog_vmap_app_shelf_item[] {
 
 		const mol = '$mol' + '_'

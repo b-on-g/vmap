@@ -9,6 +9,7 @@ $bog_vmap_app_shelf $mol_page
 	drag_source \
 	drag_title \
 	item_source* \
+	class_offers /
 	place? \
 	files? /File
 	classes_showed? false

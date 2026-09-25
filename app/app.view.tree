@@ -233,6 +233,9 @@ $bog_vmap_app $mol_page
 		peers <= node_peers /$mol_tree2
 		pack <= pack_link \
 		class_title? <=> node_title? \
+		base? <=> node_base? \
+		bases <= node_bases /string
+		base_titles <= node_base_titles *
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null

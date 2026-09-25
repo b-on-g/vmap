@@ -16,8 +16,19 @@ $bog_vmap_app_inspect $mol_page
 			event *
 				^
 				blur? <=> title_submit? null
+	base? \
+	bases /string
+	base_titles *
+	Base $mol_select
+		hint \класс детали
+		enabled <= editable
+		value? <=> base?
+		options <= bases
+		dictionary <= base_titles
+		filter_hint \другой класс целиком
+		submit? <=> base_submit? null
 	tools /$mol_view_content
-		<= base_title \
+		<= base_pick null
 		<= total \
 		<= Note $mol_status
 			status <= title_note

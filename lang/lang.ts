@@ -489,6 +489,25 @@ namespace $ {
 
 		}
 
+		part_class( name: string, next?: string ) {
+
+			const decl = this.prop_decl( name )
+			const klass = decl?.kids[ 0 ]
+
+			if( !decl || !klass || !$mol_view_tree2_class_match( klass ) ) return ''
+			if( next === undefined || next === klass.type ) return klass.type
+
+			const base = klass.struct( next, klass.kids )
+
+			if( ! $mol_view_tree2_class_match( base ) ) this.$.$mol_fail(
+				new Error( `Part class must be a class name, got ${ JSON.stringify( next ) }` )
+			)
+
+			this.prop_tree( name, decl.clone([ base ]) )
+
+			return next
+		}
+
 		@ $mol_action
 		wire_add( wire: $bog_vmap_lang_wire ) {
 

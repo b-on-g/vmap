@@ -179,6 +179,24 @@ namespace $.$$ {
 			)
 		}
 
+		override class_offers(): readonly { readonly klass: string, readonly title: string }[] {
+
+			const seen = new Set< string >()
+			const offers = [] as { klass: string, title: string }[]
+
+			for( const item of this.items() ) {
+
+				const klass = this.$.$bog_vmap_app_shelf_lone( item.source )
+				if( !klass || seen.has( klass ) ) continue
+
+				seen.add( klass )
+				offers.push({ klass, title: item.title })
+
+			}
+
+			return offers
+		}
+
 		item( id: string ): $bog_vmap_app_shelf_item | null {
 
 			if( !id ) return null

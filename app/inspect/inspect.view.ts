@@ -64,6 +64,24 @@ namespace $.$$ {
 			return this.Node().base()
 		}
 
+		base_pick(): $mol_view_content {
+			return this.bases().length ? this.Base() : this.base_title()
+		}
+
+		@ $mol_action
+		base_submit( next?: Event | null ) {
+
+			const typed = this.Base().filter_pattern().trim()
+			if( !typed ) return null
+
+			this.base( typed )
+
+			this.Base().filter_pattern( '' )
+			this.Base().showed( false )
+
+			return null
+		}
+
 		@ $mol_mem
 		ports() {
 			return this.Lib().props_map( this.class_title() )
