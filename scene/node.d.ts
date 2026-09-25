@@ -2742,6 +2742,7 @@ declare namespace $ {
         prop_rename(name: string, next: string): undefined;
         property(name: string): $bog_vmap_lang_prop;
         part_add(name: string, klass: string): void;
+        part_class(name: string, next?: string): string;
         wire_add(wire: $bog_vmap_lang_wire): void;
         wires(): readonly $bog_vmap_lang_wire[];
         part_names(): string[];

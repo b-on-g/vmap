@@ -6295,6 +6295,19 @@ var $;
             const tree = this.tree();
             this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
         }
+        part_class(name, next) {
+            const decl = this.prop_decl(name);
+            const klass = decl?.kids[0];
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
+                return '';
+            if (next === undefined || next === klass.type)
+                return klass.type;
+            const base = klass.struct(next, klass.kids);
+            if (!$mol_view_tree2_class_match(base))
+                this.$.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(next)}`));
+            this.prop_tree(name, decl.clone([base]));
+            return next;
+        }
         wire_add(wire) {
             const next = this.$.$bog_vmap_lang_wire_tree(wire);
             if (!this.prop_names().includes(wire.node))
