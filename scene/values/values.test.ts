@@ -290,6 +290,24 @@ namespace $ {
 
 		},
 
+		'a number that is not a number is a dash, and an empty field stays empty'( $ ) {
+
+			const root = {
+				count() { return NaN },
+				sum() { return 0 },
+				note() { return '' },
+				rows() { return [ { sum: NaN }, { sum: 3 } ] },
+			}
+
+			const values = $.$bog_vmap_scene_values( root, [ 'count', 'sum', 'note', 'rows' ] )
+
+			$mol_assert_equal( values.count, '—' )
+			$mol_assert_equal( values.sum, '0' )
+			$mol_assert_equal( values.note, '' )
+			$mol_assert_like( values.rows.split( '\n' ), [ 'sum', '—', '3' ] )
+
+		},
+
 	})
 
 }

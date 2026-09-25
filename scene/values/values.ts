@@ -1,11 +1,14 @@
 namespace $ {
 
+	export const $bog_vmap_scene_value_none = '—'
+
 	export function $bog_vmap_scene_value_text( val: unknown, limit = 40 ) {
 
 		let text: string
 
 		if( val === undefined ) text = 'undefined'
 		else if( val === null ) text = 'null'
+		else if( typeof val === 'number' && Number.isNaN( val ) ) text = $bog_vmap_scene_value_none
 		else if( typeof val === 'function' ) text = 'function'
 		else if( typeof val !== 'object' ) text = String( val )
 		else if( Array.isArray( val ) || Object.getPrototypeOf( val ) === Object.prototype ) {
