@@ -18650,6 +18650,8 @@ var $;
         `${d}flow_map ${d}mol_view`,
         `\tzoom 0`,
         `\tmarker \\`,
+        `${d}flow_plain ${d}mol_object`,
+        `\tlabel \\`,
         ...$_1.$bog_vmap_app_flow_parts,
         ``,
     ].join('\n');
@@ -19076,7 +19078,7 @@ var $;
             $mol_assert_ok(shelf.includes('Выбор'));
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, [
-                'Button', 'Calc', 'Map',
+                'Button', 'Calc', 'Map', 'Plain',
                 'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
             ]);
             $mol_assert_equal(stage.root.querySelector('[bog_vmap_app_palette_class_row]'), null);
@@ -19084,7 +19086,7 @@ var $;
             const rows = [...stage.root.querySelectorAll('[bog_vmap_app_palette_class_row]')]
                 .map(el => el.textContent);
             $mol_assert_like(rows, [
-                `${d}mol_view`, button, calc, map,
+                `${d}mol_view`, button, calc, map, `${d}flow_plain`,
                 ...$_2.$bog_vmap_app_flow_parts.filter(line => line[0] === '$').map(line => line.split(' ')[0]),
             ]);
             $mol_assert_like(stage.broken(), [stage.pane.Scene(stage.pane.scene_key()).dom_id()]);
@@ -19851,7 +19853,7 @@ var $;
             $mol_assert_equal(stage.app.links(), '');
             const apps = [...stage.root.querySelectorAll('[bog_vmap_app_shelf_app_list] [bog_vmap_app_shelf_item_row]')].map(el => el.textContent);
             $mol_assert_like(apps, [
-                'Button', 'Calc', 'Map',
+                'Button', 'Calc', 'Map', 'Plain',
                 'Vmap_part_cell', 'Vmap_part_plot', 'Vmap_part_calc', 'Vmap_part_map',
             ]);
         },
@@ -20769,6 +20771,147 @@ var $;
             pane.camera_zoom(.3);
             pressed($, stage, 'Digit0', { key: ')', shiftKey: true });
             $mol_assert_equal(pane.zoom_title(), '100%');
+        },
+    });
+})($ || ($ = {}));
+(function ($_6) {
+    const d = '$';
+    const calc = `${d}flow_calc`;
+    const map = `${d}flow_map`;
+    const button = `${d}flow_button`;
+    const plain = `${d}flow_plain`;
+    const over = (stage, part, prop, value) => {
+        const node = stage.app.node();
+        const tree = node.tree();
+        node.over_set(part, prop, tree.struct(prop, [tree.data(value)]));
+        stage.redraw();
+    };
+    const wire = (stage, from, from_port, to, to_port) => {
+        const overlay = stage.overlay();
+        stage.tap(stage.part_center(from));
+        stage.press(overlay, stage.port_dot(from, from_port, 'out'));
+        stage.move(overlay, stage.port_dot(to, to_port, 'in'));
+        stage.release(overlay, stage.port_dot(to, to_port, 'in'));
+        stage.redraw();
+    };
+    $mol_test({
+        'a class swap keeps what the new class knows and what the person wrote'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.selected('Calc');
+            over(stage, 'Calc', 'title', 'Мой счёт');
+            over(stage, 'Calc', 'op', 'minus');
+            over(stage, 'Calc', 'wat', 'своё');
+            $mol_assert_equal(stage.app.node_base(), calc);
+            const spot = stage.app.spots()['Calc'];
+            stage.app.node_base(map);
+            stage.redraw();
+            const source = stage.app.doc_source();
+            $mol_assert_equal(stage.app.node_base(), map);
+            $mol_assert_ok(source.includes('title \\Мой счёт'));
+            $mol_assert_ok(source.includes('wat \\своё'));
+            $mol_assert_equal(source.includes('op \\minus'), false);
+            $mol_assert_like(stage.app.spots()['Calc'], spot);
+            $mol_assert_like(stage.app.node().part_names(), ['Calc']);
+        },
+        'a class swap names every override it took off'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.selected('Calc');
+            over(stage, 'Calc', 'op', 'minus');
+            over(stage, 'Calc', 'result', '7');
+            stage.app.node_base(map);
+            stage.redraw();
+            const note = stage.app.status();
+            $mol_assert_ok(note.includes(`Класс заменён на ${map}`));
+            $mol_assert_ok(note.includes('снято переопределений: 2'));
+            $mol_assert_ok(note.includes('op, result'));
+            $mol_assert_ok(stage.canvas_text().includes('снято переопределений: 2'));
+        },
+        'a class swap counts every taken override and shows only the first few'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.selected('Calc');
+            over(stage, 'Calc', 'op', 'minus');
+            over(stage, 'Calc', 'result', '7');
+            over(stage, 'Calc', 'title', 'Мой счёт');
+            over(stage, 'Calc', 'style', 'какой-то');
+            over(stage, 'Calc', 'attr', 'какой-то');
+            stage.app.node_base(plain);
+            stage.redraw();
+            const note = stage.app.status();
+            const taken = stage.app.base_made().dropped;
+            $mol_assert_like(taken, ['op', 'result', 'title', 'style', 'attr']);
+            $mol_assert_ok(note.includes('снято переопределений: 5'));
+            $mol_assert_ok(note.includes('op, result, title и ещё 2'));
+        },
+        'a class swap never takes the children away, even to a class with no sub'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.board_draw({ x: 40, y: 40, width: 400, height: 300 });
+            stage.redraw();
+            const board = stage.app.selected();
+            const node = stage.app.node();
+            node.sub_move('Calc', 0, board);
+            stage.redraw();
+            $mol_assert_like(stage.app.node().sub_names(board), ['Calc']);
+            $mol_assert_equal(stage.app.class_knows(plain, 'sub'), false);
+            stage.app.selected(board);
+            stage.app.node_base(plain);
+            stage.redraw();
+            $mol_assert_equal(stage.app.node_base(), plain);
+            $mol_assert_like(stage.app.node().sub_names(board), ['Calc']);
+            $mol_assert_ok(stage.app.node().part_names().includes('Calc'));
+        },
+        'a class swap that would cut an incoming wire is refused by name'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            wire(stage, 'Calc', 'result', 'Map', 'zoom');
+            $mol_assert_equal(stage.app.node().links().length, 1);
+            stage.app.selected('Map');
+            stage.app.node_base(button);
+            stage.redraw();
+            const note = stage.app.node_title_note();
+            $mol_assert_equal(stage.app.node_base(), map);
+            $mol_assert_equal(stage.app.node().links().length, 1);
+            $mol_assert_ok(note.includes(`Класс ${button} не знает`));
+            $mol_assert_ok(note.includes('входящий в «zoom» от Calc.result'));
+        },
+        'a class swap that would cut an outgoing wire is refused by name'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([100, 100]));
+            stage.drop(map, stage.client([400, 100]));
+            wire(stage, 'Calc', 'result', 'Map', 'zoom');
+            stage.app.selected('Calc');
+            stage.app.node_base(button);
+            stage.redraw();
+            const note = stage.app.node_title_note();
+            $mol_assert_equal(stage.app.node_base(), calc);
+            $mol_assert_equal(stage.app.node().links().length, 1);
+            $mol_assert_ok(note.includes('исходящий из «result»'));
+        },
+        'a name that is not a class in the pack is refused with words'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.selected('Calc');
+            stage.app.node_base(`${d}no_such_part`);
+            stage.redraw();
+            $mol_assert_equal(stage.app.node_base(), calc);
+            $mol_assert_ok(stage.app.node_title_note().includes(`Класса «${d}no_such_part» нет в паке`));
+        },
+        'the class picker offers one entry per single part item of the shelf'($) {
+            const stage = $_6.$bog_vmap_app_flow_stage($);
+            stage.drop(calc, stage.client([200, 150]));
+            stage.app.selected('Calc');
+            const offers = stage.app.node_bases();
+            const titles = stage.app.node_base_titles();
+            $mol_assert_ok(offers.includes(`${d}mol_number`));
+            $mol_assert_ok(offers.includes(`${d}bog_vmap_part_calc`));
+            $mol_assert_equal(offers.length, new Set(offers).size);
+            $mol_assert_equal(titles[`${d}mol_number`], 'Число');
+            for (const klass of offers)
+                $mol_assert_equal($.$bog_vmap_app_shelf_lone($.$bog_vmap_app_shelf_single(klass)), klass);
         },
     });
 })($ || ($ = {}));

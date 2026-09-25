@@ -18242,6 +18242,19 @@ var $;
             const tree = this.tree();
             this.tree(tree.insert(this.$.$bog_vmap_lang_part_tree(name, klass), null, name));
         }
+        part_class(name, next) {
+            const decl = this.prop_decl(name);
+            const klass = decl?.kids[0];
+            if (!decl || !klass || !$mol_view_tree2_class_match(klass))
+                return '';
+            if (next === undefined || next === klass.type)
+                return klass.type;
+            const base = klass.struct(next, klass.kids);
+            if (!$mol_view_tree2_class_match(base))
+                this.$.$mol_fail(new Error(`Part class must be a class name, got ${JSON.stringify(next)}`));
+            this.prop_tree(name, decl.clone([base]));
+            return next;
+        }
         wire_add(wire) {
             const next = this.$.$bog_vmap_lang_wire_tree(wire);
             if (!this.prop_names().includes(wire.node))
@@ -25702,6 +25715,9 @@ var $;
 		item_source(id){
 			return "";
 		}
+		class_offers(){
+			return [];
+		}
 		place(next){
 			if(next !== undefined) return next;
 			return "";
@@ -25848,6 +25864,18 @@ var $;
         return `${$bog_vmap_app_shelf_head}\n\t${name} ${klass}\n\tsub /\n\t\t<= ${name}\n`;
     }
     $.$bog_vmap_app_shelf_single = $bog_vmap_app_shelf_single;
+    function $bog_vmap_app_shelf_lone(source) {
+        const preset = $bog_vmap_lang_node.make({
+            $: this,
+            source: () => source,
+        });
+        const parts = preset.part_names();
+        if (parts.length !== 1)
+            return '';
+        const klass = preset.prop_decl(parts[0])?.kids[0];
+        return klass && this.$mol_view_tree2_class_match(klass) ? klass.type : '';
+    }
+    $.$bog_vmap_app_shelf_lone = $bog_vmap_app_shelf_lone;
     function $bog_vmap_app_shelf_inputs() {
         const mol = '$mol' + '_';
         return [
@@ -26196,6 +26224,18 @@ var $;
             items_shown() {
                 return this.items().filter(item => this.$.$bog_vmap_app_shelf_match(this.filter(), item.title, item.hint));
             }
+            class_offers() {
+                const seen = new Set();
+                const offers = [];
+                for (const item of this.items()) {
+                    const klass = this.$.$bog_vmap_app_shelf_lone(item.source);
+                    if (!klass || seen.has(klass))
+                        continue;
+                    seen.add(klass);
+                    offers.push({ klass, title: item.title });
+                }
+                return offers;
+            }
             item(id) {
                 if (!id)
                     return null;
@@ -26486,16 +26526,6 @@ var $;
         }
         $$.$bog_vmap_app_inspect_flex = $bog_vmap_app_inspect_flex;
     })($$ = $.$$ || ($.$$ = {}));
-})($ || ($ = {}));
-
-;
-"use strict";
-var $;
-(function ($) {
-    function $mol_tree2_js_is_number(type) {
-        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
-    }
-    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
 })($ || ($ = {}));
 
 ;
@@ -26833,6 +26863,16 @@ var $;
 var $;
 (function ($) {
     $mol_style_attach("mol/select/select.view.css", "[mol_select] {\n\tdisplay: flex;\n\tword-break: normal;\n\talign-self: flex-start;\n}\n\n[mol_select_option_row] {\n\tmin-width: 100%;\n\tpadding: 0;\n\tjustify-content: flex-start;\n}\n\n[mol_select_filter] {\n\tflex: 1 0 auto;\n\talign-self: stretch;\n}\n\n[mol_select_option_label] {\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tmin-height: 1.5em;\n\tdisplay: block;\n\twhite-space: nowrap;\n}\n\n[mol_select_clear_option_content] {\n\tpadding: .5em 1rem .5rem 0;\n\ttext-align: start;\n\tbox-shadow: var(--mol_theme_line);\n\tflex: 1 0 auto;\n}\n\n[mol_select_no_options] {\n\tpadding: var(--mol_gap_text);\n\ttext-align: start;\n\tdisplay: block;\n\tcolor: var(--mol_theme_shade);\n}\n\n[mol_select_trigger] {\n\tpadding: 0;\n\tflex: 1 1 auto;\n\tdisplay: flex;\n}\n\n[mol_select_trigger] > * {\n\tmargin-inline-end: -1rem;\n}\n\n[mol_select_trigger] > *:last-child {\n\tmargin-inline-end: 0;\n}\n\n[mol_select_menu] {\n\tdisplay: flex;\n\tflex-direction: column;\n}\n\n");
+})($ || ($ = {}));
+
+;
+"use strict";
+var $;
+(function ($) {
+    function $mol_tree2_js_is_number(type) {
+        return type.match(/[\+\-]*NaN/) || !Number.isNaN(Number(type));
+    }
+    $.$mol_tree2_js_is_number = $mol_tree2_js_is_number;
 })($ || ($ = {}));
 
 ;
@@ -27983,8 +28023,12 @@ var $;
 			(obj.event) = () => ({...(this.$.$mol_string.prototype.event.call(obj)), "blur": (next) => (this.title_submit(next))});
 			return obj;
 		}
-		base_title(){
-			return "";
+		base_submit(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		base_pick(){
+			return null;
 		}
 		total(){
 			return "";
@@ -28100,9 +28144,30 @@ var $;
 		title_content(){
 			return [(this.Name())];
 		}
+		base(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		bases(){
+			return [];
+		}
+		base_titles(){
+			return {};
+		}
+		Base(){
+			const obj = new this.$.$mol_select();
+			(obj.hint) = () => ("класс детали");
+			(obj.enabled) = () => ((this.editable()));
+			(obj.value) = (next) => ((this.base(next)));
+			(obj.options) = () => ((this.bases()));
+			(obj.dictionary) = () => ((this.base_titles()));
+			(obj.filter_hint) = () => ("другой класс целиком");
+			(obj.submit) = (next) => ((this.base_submit(next)));
+			return obj;
+		}
 		tools(){
 			return [
-				(this.base_title()), 
+				(this.base_pick()), 
 				(this.total()), 
 				(this.Note())
 			];
@@ -28164,6 +28229,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "title_value"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "title_submit"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Name"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "base_submit"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Note"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "flex_value"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Flex"));
@@ -28177,6 +28243,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "source"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "pack"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "class_title"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "base"));
+	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Base"));
 	($mol_mem_key(($.$bog_vmap_app_inspect.prototype), "cell"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Empty"));
 	($mol_mem(($.$bog_vmap_app_inspect.prototype), "Node"));
@@ -28649,6 +28717,18 @@ var $;
             base_title() {
                 return this.Node().base();
             }
+            base_pick() {
+                return this.bases().length ? this.Base() : this.base_title();
+            }
+            base_submit(next) {
+                const typed = this.Base().filter_pattern().trim();
+                if (!typed)
+                    return null;
+                this.base(typed);
+                this.Base().filter_pattern('');
+                this.Base().showed(false);
+                return null;
+            }
             ports() {
                 return this.Lib().props_map(this.class_title());
             }
@@ -28845,6 +28925,9 @@ var $;
         __decorate([
             $mol_action
         ], $bog_vmap_app_inspect.prototype, "title_submit", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app_inspect.prototype, "base_submit", null);
         __decorate([
             $mol_mem
         ], $bog_vmap_app_inspect.prototype, "ports", null);
@@ -30104,6 +30187,16 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		node_base(next){
+			if(next !== undefined) return next;
+			return "";
+		}
+		node_bases(){
+			return [];
+		}
+		node_base_titles(){
+			return {};
+		}
 		node_title_note(){
 			return "";
 		}
@@ -30412,6 +30505,9 @@ var $;
 			(obj.peers) = () => ((this.node_peers()));
 			(obj.pack) = () => ((this.pack_link()));
 			(obj.class_title) = (next) => ((this.node_title(next)));
+			(obj.base) = (next) => ((this.node_base(next)));
+			(obj.bases) = () => ((this.node_bases()));
+			(obj.base_titles) = () => ((this.node_base_titles()));
 			(obj.title_note) = () => ((this.node_title_note()));
 			(obj.renamable) = () => ((this.node_renamable()));
 			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
@@ -30589,6 +30685,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Pane"));
 	($mol_mem(($.$bog_vmap_app.prototype), "shelf_place"));
 	($mol_mem(($.$bog_vmap_app.prototype), "node_title"));
+	($mol_mem(($.$bog_vmap_app.prototype), "node_base"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "node_cell"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "node_reset"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Idle_note"));
@@ -33084,6 +33181,9 @@ var $;
                 const reset = this.reset_note();
                 if (reset)
                     return reset;
+                const base = this.base_note();
+                if (base)
+                    return base;
                 if (this.Pane().warmed())
                     return 'сцена на связи';
                 return this.Pane().pack_note() || 'ожидание сцены…';
@@ -33417,11 +33517,14 @@ var $;
             over_name(sign) {
                 return sign.replace(/[?*]+$/, '');
             }
-            over_known(part, prop) {
-                const props = this.class_props(this.node_class(part));
+            class_knows(klass, prop) {
+                const props = this.class_props(klass);
                 if (!props)
                     return false;
                 return props.has(prop) || props.has(prop + '?') || props.has(prop + '*');
+            }
+            over_known(part, prop) {
+                return this.class_knows(this.node_class(part), prop);
             }
             over_wired(part, prop) {
                 return this.node().links().some(link => (link.to === part && link.to_prop === prop)
@@ -33523,6 +33626,143 @@ var $;
                 if (this.doc_source() !== made.source)
                     return '';
                 return 'Провода и свои свойства остались, сброс вернул только то, что предлагает деталь';
+            }
+            base_offers() {
+                try {
+                    return this.Shelf().class_offers();
+                }
+                catch (error) {
+                    if (!$mol_promise_like(error))
+                        $mol_fail_log(error);
+                    return [];
+                }
+            }
+            node_bases() {
+                return this.base_offers().map(offer => offer.klass);
+            }
+            node_base_titles() {
+                const titles = {};
+                for (const offer of this.base_offers())
+                    titles[offer.klass] = offer.title;
+                return titles;
+            }
+            base_listed(klass) {
+                try {
+                    return this.Lib().class_list().includes(klass);
+                }
+                catch (error) {
+                    if ($mol_promise_like(error))
+                        return $mol_fail_hidden(error);
+                    $mol_fail_log(error);
+                    return false;
+                }
+            }
+            base_plan(part, klass) {
+                const node = this.node();
+                const kept = [];
+                const dropped = [];
+                const wires_in = [];
+                const wires_out = [];
+                for (const prop of this.over_names(part)) {
+                    if (prop === 'sub') {
+                        kept.push(prop);
+                        continue;
+                    }
+                    if (this.class_knows(klass, prop)) {
+                        kept.push(prop);
+                        continue;
+                    }
+                    if (!this.over_known(part, prop)) {
+                        kept.push(prop);
+                        continue;
+                    }
+                    if (this.over_wired(part, prop))
+                        continue;
+                    dropped.push(prop);
+                }
+                for (const link of node.links()) {
+                    if (link.to !== part)
+                        continue;
+                    if (this.class_knows(klass, link.to_prop))
+                        continue;
+                    wires_in.push(link.to_prop);
+                }
+                for (const wire of node.wires()) {
+                    if (wire.node !== part)
+                        continue;
+                    if (this.class_knows(klass, wire.prop))
+                        continue;
+                    wires_out.push(wire.prop);
+                }
+                return { kept, dropped, wires_in, wires_out };
+            }
+            base_wires_note(part, klass, plan) {
+                const node = this.node();
+                const bits = [];
+                for (const prop of plan.wires_in) {
+                    const link = node.links().find(one => one.to === part && one.to_prop === prop);
+                    const from = link ? `${link.from}.${link.from_prop}` : 'другого узла';
+                    bits.push(`входящий в «${prop}» от ${from}`);
+                }
+                for (const prop of plan.wires_out) {
+                    bits.push(`исходящий из «${prop}»`);
+                }
+                return `Класс ${klass} не знает свойств, на которых висят провода: ${bits.join(', ')}.`
+                    + ' Отсоедините их и повторите замену';
+            }
+            base_few(names, shown = 3) {
+                if (names.length <= shown)
+                    return names.join(', ');
+                return `${names.slice(0, shown).join(', ')} и ещё ${names.length - shown}`;
+            }
+            base_made(next) {
+                return next ?? null;
+            }
+            base_note() {
+                const made = this.base_made();
+                if (!made)
+                    return '';
+                if (this.doc_source() !== made.source)
+                    return '';
+                if (!made.dropped.length)
+                    return `Класс заменён на ${made.klass}, переопределения сохранены`;
+                return `Класс заменён на ${made.klass}, снято переопределений: ${made.dropped.length}`
+                    + ` (${this.base_few(made.dropped)})`;
+            }
+            node_base_note_at(name, next) {
+                return next ?? '';
+            }
+            node_base(next) {
+                const part = this.selected();
+                if (this.inner() || !part)
+                    return '';
+                const node = this.node();
+                const klass = node.part_class(part);
+                if (next === undefined || !next || next === klass)
+                    return klass;
+                if (!this.editable())
+                    return klass;
+                if (!this.base_listed(next)) {
+                    this.node_base_note_at(part, `Класса «${next}» нет в паке деталей ${this.pack_link()}`);
+                    return klass;
+                }
+                const plan = this.base_plan(part, next);
+                if (plan.wires_in.length || plan.wires_out.length) {
+                    this.node_base_note_at(part, this.base_wires_note(part, next, plan));
+                    return klass;
+                }
+                this.base_swap(part, next, plan.dropped);
+                this.node_base_note_at(part, '');
+                this.base_made({ source: this.doc_source(), klass: next, dropped: plan.dropped });
+                return next;
+            }
+            base_swap(part, klass, dropped) {
+                const draft = this.doc_draft();
+                const node = draft.node(this.doc_root());
+                node.part_class(part, klass);
+                for (const prop of dropped)
+                    this.reset_one(node, part, prop);
+                this.node().tree(node.tree());
             }
             group_names() {
                 const node = this.node();
@@ -33717,6 +33957,9 @@ var $;
                 if (this.inner_foreign())
                     return this.inner_foreign_note();
                 const name = this.selected() ?? '';
+                const base = this.node_base_note_at(name);
+                if (base)
+                    return base;
                 const note = this.node_title_note_at(name);
                 return note ? `${note}. Узел по-прежнему называется «${name}»` : '';
             }
@@ -34023,6 +34266,15 @@ var $;
         __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "reset_made", null);
+        __decorate([
+            $mol_mem
+        ], $bog_vmap_app.prototype, "base_made", null);
+        __decorate([
+            $mol_mem_key
+        ], $bog_vmap_app.prototype, "node_base_note_at", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "base_swap", null);
         __decorate([
             $mol_action
         ], $bog_vmap_app.prototype, "node_ungroup", null);
