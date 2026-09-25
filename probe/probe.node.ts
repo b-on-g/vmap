@@ -1159,24 +1159,15 @@ namespace $ {
 				}
 			`, 30000 ) as { width: number, cut: number, rows: number, keys: number[], spill: number[] }
 
-			const paint = async ()=> await browser.evaluate( `
+			const reach = async ()=> await browser.evaluate( `
 				const app = ${ app }
-				const inspect = app.Inspect()
-				const rows = inspect.rows()
+				const row = app.Inspect().rows().find( one => one.sign() === 'style' )
+				if( !row ) return -1
 
-				inspect.Rows().force_render( new Set( rows ) )
-				app.dom_tree()
+				row.dom_node().scrollIntoView({ block: 'center' })
+				await new Promise( done => requestAnimationFrame( ()=> requestAnimationFrame( done ) ) )
 
-				for( const row of rows ) {
-					try {
-						const seq = row.Value().Seq()
-						seq.Items().force_render( new Set( seq.items() ) )
-					} catch( error ) {}
-				}
-
-				app.dom_tree()
-
-				return rows.length
+				return Math.round( row.dom_node().getBoundingClientRect().top )
 			`, 30000 )
 
 			const settled = async ()=> {
@@ -1186,7 +1177,7 @@ namespace $ {
 				let last = -1
 
 				for( ;; ) {
-					await paint()
+					await reach()
 					const got = await shape()
 					if( got.rows > 0 && got.rows === last ) return got
 					if( Date.now() - began > 30000 ) return got
