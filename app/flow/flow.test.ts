@@ -83,15 +83,93 @@ namespace $ {
 
 	export type $bog_vmap_app_flow_sent = { kind: string, [ key: string ]: unknown }
 
+	const flow_born = new Set< object >()
+	const flow_gone = new WeakSet< object >()
+
+	function flow_watch( klass: { make( config: never ): object } ) {
+
+		const make = klass.make
+
+		klass.make = function( this: unknown, config: never ) {
+			const obj = make.call( this, config )
+			flow_born.add( obj )
+			return obj
+		}
+
+	}
+
+	function flow_walk( obj: object, seen: Set< object > ): number {
+
+		if( seen.has( obj ) || flow_gone.has( obj ) ) return 0
+		seen.add( obj )
+		flow_gone.add( obj )
+
+		let killed = 0
+
+		const take = ( atom: unknown )=> {
+
+			if( !( atom instanceof $mol_wire_atom ) ) return
+
+			const cache = ( atom as unknown as { cache?: unknown } ).cache
+
+			if( cache && typeof cache === 'object' && $mol_owning_check( atom, cache ) ) {
+				killed += flow_walk( cache as object, seen )
+			}
+
+			try { atom.destructor() } catch( error ) { $mol_fail_log( error ) }
+
+			++ killed
+		}
+
+		for( const key of Reflect.ownKeys( obj ) ) {
+
+			const val = ( obj as Record< PropertyKey, unknown > )[ key ]
+
+			if( val instanceof Map ) {
+				for( const one of val.values() ) take( one )
+				continue
+			}
+
+			take( val )
+		}
+
+		try { ( obj as { destructor?: ()=> void } ).destructor?.() } catch( error ) { $mol_fail_log( error ) }
+
+		return killed
+	}
+
+	export function $bog_vmap_app_flow_sweep( obj: object | null ) {
+
+		if( !obj ) return 0
+
+		if( !Reflect.ownKeys( obj ).length ) $mol_fail( new Error(
+			`Нечего разбирать: у ${ obj.constructor?.name ?? obj } нет своих ключей,`
+			+ ' глубокий разбор позвали не на том объекте'
+		) )
+
+		return flow_walk( obj, new Set< object >() )
+	}
+
 	export const $bog_vmap_app_flow_swept = ( ()=> {
 
 		const done = $mol_test_complete
 
+		flow_watch( $bog_vmap_app )
+
 		$.$mol_test_complete = ()=> {
-			$bog_vmap_app_flow_last?.destructor()
+
+			$bog_vmap_app_flow_sweep( $bog_vmap_app_flow_last )
 			$bog_vmap_app_flow_last = null
 			$bog_vmap_app_flow_host?.remove()
 			$bog_vmap_app_flow_host = null
+
+			for( const one of flow_born ) {
+				try { $bog_vmap_app_flow_sweep( one ) }
+				catch( error ) { $mol_fail_log( error ) }
+			}
+
+			flow_born.clear()
+
 			return done()
 		}
 
@@ -155,7 +233,7 @@ namespace $ {
 
 		const dom = $.$mol_dom_context
 
-		$bog_vmap_app_flow_last?.destructor()
+		$bog_vmap_app_flow_sweep( $bog_vmap_app_flow_last )
 		$bog_vmap_app_flow_host?.remove()
 
 		const host = dom.document.createElement( 'div' )
