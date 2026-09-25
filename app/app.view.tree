@@ -251,6 +251,10 @@ $bog_vmap_app $mol_page
 		cell*? <=> node_cell*? null
 		resettable* <= node_resettable* false
 		reset*? <=> node_reset*? null
+		share_able* <= node_share_able* false
+		share_mark* <= node_share_mark* \
+		share*? <=> node_share*? null
+		share_unshare*? <=> node_share_unshare*? null
 		editable <= node_editable true
 	Idle $mol_page
 		title \Свойства

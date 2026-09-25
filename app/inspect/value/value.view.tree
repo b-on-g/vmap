@@ -4,6 +4,11 @@ $bog_vmap_app_inspect_value $mol_list
 	nodes *
 	alarm? \
 	note \
+	path \
+	share_able* false
+	share_mark* \
+	share*? null
+	share_unshare*? null
 	editable true
 	rows <= editors /$mol_view
 	Alarm $mol_status
@@ -29,6 +34,11 @@ $bog_vmap_app_inspect_value $mol_list
 		binds <= binds
 		nodes <= nodes
 		note <= note
+		path <= path
+		share_able* <= share_able*
+		share_mark* <= share_mark*
+		share*? <=> share*?
+		share_unshare*? <=> share_unshare*?
 		alarm? <=> alarm?
 		editable <= editable
 	Bind $bog_vmap_app_inspect_value_bind
@@ -73,6 +83,11 @@ $bog_vmap_app_inspect_value_seq $mol_list
 	keyed false
 	klass false
 	note \
+	path \
+	share_able* false
+	share_mark* \
+	share*? null
+	share_unshare*? null
 	editable true
 	rows <= seq_sub /$mol_view
 	Note $mol_status
@@ -96,6 +111,11 @@ $bog_vmap_app_inspect_value_seq $mol_list
 		binds <= binds
 		nodes <= nodes
 		drop? <=> item_drop*? null
+		path <= item_path* \
+		share_able* <= share_able*
+		share_mark* <= share_mark*
+		share*? <=> share*?
+		share_unshare*? <=> share_unshare*?
 		editable <= editable
 
 $bog_vmap_app_inspect_value_item $mol_bar
@@ -105,8 +125,25 @@ $bog_vmap_app_inspect_value_item $mol_bar
 	keyed false
 	marker false
 	drop? null
+	path \
+	share_able* false
+	share_mark* \
+	share*? null
+	share_unshare*? null
 	editable true
 	sub <= item_sub /$mol_view
+	Share $mol_button_minor
+		title \общее
+		hint \Вынести значение в общее: оно объявится один раз, здесь останется ссылка
+		click? <=> share_click? null
+		enabled <= editable
+	Unshare $mol_button_minor
+		title \своё
+		hint \Отвязать от общего значения и вернуть его сюда как своё
+		click? <=> unshare_click? null
+		enabled <= editable
+	Mark $mol_view
+		sub <= mark_sub /$mol_view_content
 	Key $mol_string
 		hint \ключ
 		value? <=> key? \

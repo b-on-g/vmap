@@ -160,6 +160,16 @@ namespace $.$$ {
 			return this.keyed() && !this.tree().kids[ index ]?.kids.length
 		}
 
+		override item_path( index: number ) {
+
+			const path = this.path()
+			if( !path || !this.keyed() ) return ''
+
+			const key = this.item_key( index )
+
+			return key ? `${ path }/${ key }` : ''
+		}
+
 		override item_key( index: number, next?: string ) {
 
 			const tree = this.tree()
@@ -230,10 +240,38 @@ namespace $.$$ {
 
 	export class $bog_vmap_app_inspect_value_item extends $.$bog_vmap_app_inspect_value_item {
 
+		share_here() {
+			const path = this.path()
+			return Boolean( path ) && this.share_able( path )
+		}
+
+		mark_here() {
+			const path = this.path()
+			return path ? this.share_mark( path ) : ''
+		}
+
+		@ $mol_action
+		share_click( next?: Event | null ) {
+			this.share( this.path(), next ?? null )
+			return null
+		}
+
+		@ $mol_action
+		unshare_click( next?: Event | null ) {
+			this.share_unshare( this.path(), next ?? null )
+			return null
+		}
+
+		override mark_sub() {
+			return [ this.mark_here() ] as readonly $mol_view_content[]
+		}
+
 		override item_sub() {
 			return [
 				... this.keyed() && !this.marker() ? [ this.Key() ] : [],
 				this.Value(),
+				... this.mark_here() ? [ this.Mark(), this.Unshare() ] : [],
+				... this.share_here() ? [ this.Share() ] : [],
 				this.Drop(),
 			] as readonly $mol_view[]
 		}

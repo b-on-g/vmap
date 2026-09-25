@@ -1451,6 +1451,9 @@ namespace $.$$ {
 			const base = this.base_note()
 			if( base ) return base
 
+			const offer = this.share_offer()
+			if( offer ) return offer
+
 			if( this.Pane().warmed() ) return 'сцена на связи'
 			return this.Pane().pack_note() || 'ожидание сцены…'
 		}
@@ -2225,6 +2228,32 @@ namespace $.$$ {
 
 			this.node().tree( node.tree() )
 
+		}
+
+		override node_share_able( path: string ) {
+			return this.share_able( path )
+		}
+
+		override node_share_mark( path: string ) {
+
+			const name = this.share_ref( path )
+			if( !name ) return ''
+
+			const uses = this.share_uses( name ).length
+
+			return `общее «${ name }», узлов ${ uses }`
+		}
+
+		@ $mol_action
+		override node_share( path: string, next?: Event | null ) {
+			this.share_make( path )
+			return null
+		}
+
+		@ $mol_action
+		override node_share_unshare( path: string, next?: Event | null ) {
+			this.share_unlink( path )
+			return null
 		}
 
 		share_names() {

@@ -3581,3 +3581,80 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const entry = ( stage: stage, key: string )=> {
+		const seq = stage.app.Inspect().Row( 'style' ).Value().Seq()
+		const at = seq.items().findIndex( ( _, i )=> seq.item_key( i ) === key )
+		return seq.Item( at ) as $$.$bog_vmap_app_inspect_value_item
+	}
+
+	$mol_test({
+
+		'the button by a style value makes it shared and the row says so'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 })
+			stage.redraw()
+			stage.click( stage.check( 'Дизайн' ) )
+
+			const one = entry( stage, 'background' )
+
+			$mol_assert_equal( one.path(), 'style/background' )
+			$mol_assert_equal( one.share_here(), true )
+			$mol_assert_equal( one.mark_here(), '' )
+			$mol_assert_ok( one.item_sub().includes( one.Share() ) )
+
+			stage.click( one.Share().dom_node() )
+			stage.redraw()
+
+			const after = entry( stage, 'background' )
+
+			$mol_assert_equal( after.share_here(), false )
+			$mol_assert_equal( after.mark_here(), 'общее «background», узлов 1' )
+			$mol_assert_ok( after.item_sub().includes( after.Unshare() ) )
+			$mol_assert_ok( stage.app.doc_source().includes( 'background <= background' ) )
+			$mol_assert_ok( after.dom_node().textContent!.includes( 'общее «background», узлов 1' ) )
+
+			stage.click( after.Unshare().dom_node() )
+			stage.redraw()
+
+			$mol_assert_equal( entry( stage, 'background' ).mark_here(), '' )
+			$mol_assert_equal( stage.app.doc_source().includes( '<= background' ), false )
+			$mol_assert_like( stage.app.share_names(), [] )
+
+		},
+
+		'the count in the mark follows the nodes that hold the shared value'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+
+			stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 })
+			stage.redraw()
+			const one = stage.app.selected()!
+
+			stage.app.board_draw({ x: 400, y: 40, width: 200, height: 120 })
+			stage.redraw()
+
+			stage.app.selected( one )
+			stage.click( stage.check( 'Дизайн' ) )
+			stage.redraw()
+
+			stage.click( entry( stage, 'background' ).Share().dom_node() )
+			stage.redraw()
+
+			$mol_assert_equal( entry( stage, 'background' ).mark_here(), 'общее «background», узлов 1' )
+			$mol_assert_ok( stage.app.status().includes( 'Связать с общим' ) )
+
+			stage.app.share_link( 'background', 'style/background' )
+			stage.redraw()
+
+			$mol_assert_equal( entry( stage, 'background' ).mark_here(), 'общее «background», узлов 2' )
+
+		},
+
+	})
+
+}

@@ -58,6 +58,10 @@ $bog_vmap_app_inspect $mol_page
 		classes <= classes /
 	resettable* false
 	reset*? null
+	share_able* false
+	share_mark* \
+	share*? null
+	share_unshare*? null
 	Row* $bog_vmap_app_inspect_row
 		sign <= row_sign* \
 		drop_hint <= row_drop_hint* \
@@ -69,6 +73,10 @@ $bog_vmap_app_inspect $mol_page
 		drop? <=> row_drop*? null
 		frozen <= row_frozen* \
 		note <= row_note* \
+		share_able* <= share_able*
+		share_mark* <= share_mark*
+		share*? <=> share*?
+		share_unshare*? <=> share_unshare*?
 		binds <= binds /string
 		nodes <= nodes *
 		editable <= editable
