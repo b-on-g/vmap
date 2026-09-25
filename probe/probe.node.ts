@@ -1011,9 +1011,12 @@ namespace $ {
 
 			const spots = await browser.evaluate( `
 				const pane = ${ app }.Pane()
-				const rect = pane.dom_node().getBoundingClientRect()
+				const rect = pane.pane_rect()
 				const box = pane.part_box( 'Page' )
-				return { empty: [ rect.right - 40, rect.bottom - 40 ], page: [ rect.left + box.left + box.width / 2, rect.top + box.top + box.height / 2 ] }
+				return {
+					empty: [ rect.left + rect.width - 40, rect.top + rect.height - 40 ],
+					page: [ rect.left + box.left + box.width / 2, rect.top + box.top + box.height / 2 ],
+				}
 			`, 15000 ) as { empty: [ number, number ], page: [ number, number ] }
 
 			for( const type of [ 'mouseMoved', 'mousePressed', 'mouseReleased' ] ) await mouse( type, spots.empty )
@@ -1638,8 +1641,8 @@ namespace $ {
 				await $bog_vmap_blank( browser, site.uri( $bog_vmap_probe_page ), `${ width }, меню у угла холста:` )
 
 				const pane = await browser.evaluate( `
-					const box = document.querySelector( '[bog_vmap_app_pane]' ).getBoundingClientRect()
-					return [ box.left, box.top, box.right, box.bottom ]
+					const rect = ${ app }.Pane().pane_rect()
+					return [ rect.left, rect.top, rect.left + rect.width, rect.top + rect.height ]
 				`, 15000 ) as readonly [ number, number, number, number ]
 
 				const inset = 12
@@ -1661,8 +1664,11 @@ namespace $ {
 
 						if( node ) await browser.evaluate( `
 							const pane = ${ app }.Pane()
-							const rect = pane.dom_node().getBoundingClientRect()
-							pane.menu({ screen: [ ${ x } - rect.left, ${ y } - rect.top ], world: [ 0, 0 ], name: 'probe' })
+							pane.menu({
+								screen: pane.screen_point({ clientX: ${ x }, clientY: ${ y } }),
+								world: [ 0, 0 ],
+								name: 'probe',
+							})
 						`, 15000 )
 						else {
 							await mouse( 'mouseMoved', [ x, y ] )
