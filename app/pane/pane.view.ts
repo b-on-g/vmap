@@ -2308,10 +2308,19 @@ namespace $.$$ {
 
 			event.stopPropagation()
 
+			if( this.text_new().trim() ) {
+				this.say( this.text_kept_note() )
+				return this.text_new_submit()
+			}
+
 			this.text_spot( null )
 			this.text_new( '' )
 
 			return null
+		}
+
+		text_kept_note() {
+			return 'Escape закончил ввод: набранное осталось на холсте, Cmd+Z уберёт.'
 		}
 
 		override board_draw( next?: $bog_vmap_bridge_rect | null ) {

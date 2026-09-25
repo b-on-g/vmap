@@ -5080,6 +5080,36 @@ namespace $ {
 
 		},
 
+		'Escape over a typed text keeps the work and says so, over an empty one writes nothing'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const pane = stage.pane
+
+			const escape = { key: 'Escape', stopPropagation() {} } as unknown as KeyboardEvent
+
+			pane.tool_text( true )
+			stage.tap( stage.client([ 300, 200 ]) )
+			pane.text_new( 'Привет' )
+			pane.text_new_key( escape )
+			stage.redraw()
+
+			$mol_assert_like( stage.app.node().part_names(), [ 'Text' ] )
+			$mol_assert_ok( stage.app.doc_source().includes( 'title \\Привет' ) )
+			$mol_assert_equal( pane.say(), pane.text_kept_note() )
+			$mol_assert_equal( pane.text_spot(), null )
+
+			const before = stage.app.doc_source()
+
+			pane.tool_text( true )
+			stage.tap( stage.client([ 500, 400 ]) )
+			pane.text_new( '   ' )
+			pane.text_new_key( escape )
+			stage.redraw()
+
+			$mol_assert_equal( stage.app.doc_source(), before )
+			$mol_assert_equal( pane.text_spot(), null )
+
+		},
+
 		'a text on bare canvas stays a free node with a spot of its own'( $ ) {
 			const stage = $bog_vmap_app_flow_stage( $ )
 			const pane = stage.pane
