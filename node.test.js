@@ -35916,6 +35916,20 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		field_style(){
+			return {};
+		}
+		field_sub(){
+			return [];
+		}
+		Field(){
+			const obj = new this.$.$bog_vmap_app_pane_field();
+			(obj.style) = () => ((this.field_style()));
+			(obj.sub) = () => ((this.field_sub()));
+			(obj.camera_shift) = (next) => ((this.camera_shift(next)));
+			(obj.camera_zoom) = (next) => ((this.camera_zoom(next)));
+			return obj;
+		}
 		overlay_style(){
 			return {};
 		}
@@ -35951,20 +35965,6 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
-		Overlay(){
-			const obj = new this.$.$bog_vmap_app_pane_overlay();
-			(obj.style) = () => ((this.overlay_style()));
-			(obj.frames) = () => ((this.frames()));
-			(obj.frame_style) = (id) => ((this.frame_style(id)));
-			(obj.inner) = () => ((this.inner_shown()));
-			(obj.inner_style) = () => ((this.inner_style()));
-			(obj.press) = (next) => ((this.node_press(next)));
-			(obj.move) = (next) => ((this.node_move(next)));
-			(obj.release) = (next) => ((this.node_release(next)));
-			(obj.away) = (next) => ((this.node_away(next)));
-			(obj.context) = (next) => ((this.node_context(next)));
-			return obj;
-		}
 		wire_lines(){
 			return [];
 		}
@@ -35974,36 +35974,14 @@ var $;
 		wire_drag_geometry(){
 			return "";
 		}
-		Wire(){
-			const obj = new this.$.$bog_vmap_app_wire();
-			(obj.lines) = () => ((this.wire_lines()));
-			(obj.dots) = () => ((this.wire_dots()));
-			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
-			return obj;
-		}
 		value_labels(){
 			return [];
-		}
-		Values(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.value_labels()));
-			return obj;
 		}
 		name_views(){
 			return [];
 		}
-		Names(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.name_views()));
-			return obj;
-		}
 		error_marks(){
 			return [];
-		}
-		Marks(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.error_marks()));
-			return obj;
 		}
 		label_style(id){
 			return {};
@@ -36151,15 +36129,6 @@ var $;
 		menu_board(next){
 			if(next !== undefined) return next;
 			return null;
-		}
-		Touch(){
-			const obj = new this.$.$mol_touch();
-			(obj.allow_draw) = () => (false);
-			(obj.allow_pan) = () => (true);
-			(obj.allow_zoom) = () => (true);
-			(obj.pan) = (next) => ((this.camera_shift(next)));
-			(obj.zoom) = (next) => ((this.camera_zoom(next)));
-			return obj;
 		}
 		attr(){
 			return {
@@ -36483,13 +36452,43 @@ var $;
 			return obj;
 		}
 		sub(){
-			return [
-				(this.Overlay()), 
-				(this.Wire()), 
-				(this.Values()), 
-				(this.Names()), 
-				(this.Marks())
-			];
+			return [(this.Field())];
+		}
+		Overlay(){
+			const obj = new this.$.$bog_vmap_app_pane_overlay();
+			(obj.style) = () => ((this.overlay_style()));
+			(obj.frames) = () => ((this.frames()));
+			(obj.frame_style) = (id) => ((this.frame_style(id)));
+			(obj.inner) = () => ((this.inner_shown()));
+			(obj.inner_style) = () => ((this.inner_style()));
+			(obj.press) = (next) => ((this.node_press(next)));
+			(obj.move) = (next) => ((this.node_move(next)));
+			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.away) = (next) => ((this.node_away(next)));
+			(obj.context) = (next) => ((this.node_context(next)));
+			return obj;
+		}
+		Wire(){
+			const obj = new this.$.$bog_vmap_app_wire();
+			(obj.lines) = () => ((this.wire_lines()));
+			(obj.dots) = () => ((this.wire_dots()));
+			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
+			return obj;
+		}
+		Values(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.value_labels()));
+			return obj;
+		}
+		Names(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.name_views()));
+			return obj;
+		}
+		Marks(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.error_marks()));
+			return obj;
 		}
 		Label(id){
 			const obj = new this.$.$bog_vmap_app_pane_label();
@@ -36637,22 +36636,15 @@ var $;
 			(obj.fit) = (next) => ((this.camera_reset(next)));
 			return obj;
 		}
-		plugins(){
-			return [...(super.plugins()), (this.Touch())];
-		}
 	};
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_over"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_take"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Field"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_context"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_edit"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_draft"));
@@ -36668,7 +36660,6 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_board"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "grip"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool_select"));
@@ -36715,6 +36706,11 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name_field"));
@@ -36733,6 +36729,32 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Span"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ghost"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
+	($.$bog_vmap_app_pane_field) = class $bog_vmap_app_pane_field extends ($.$mol_view) {
+		Touch(){
+			const obj = new this.$.$mol_touch();
+			(obj.allow_draw) = () => (false);
+			(obj.allow_pan) = () => (true);
+			(obj.allow_zoom) = () => (true);
+			(obj.pan) = (next) => ((this.camera_shift(next)));
+			(obj.zoom) = (next) => ((this.camera_zoom(next)));
+			return obj;
+		}
+		camera_shift(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$mol_vector_2d(0, 0);
+			return obj;
+		}
+		camera_zoom(next){
+			if(next !== undefined) return next;
+			return 1;
+		}
+		plugins(){
+			return [...(super.plugins()), (this.Touch())];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "Touch"));
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "camera_shift"));
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "camera_zoom"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -37277,6 +37299,12 @@ var $;
             }
             sub() {
                 return [
+                    this.Field(),
+                    ...this.ruler_views(),
+                ];
+            }
+            field_sub() {
+                return [
                     ...this.scene_shown() ? [this.Scene(this.scene_key())] : [],
                     this.Overlay(),
                     this.Wire(),
@@ -37292,10 +37320,13 @@ var $;
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
                     ...this.gap_views(),
-                    ...this.ruler_views(),
                     ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
+            }
+            field_style() {
+                const size = this.ruler_size() + 'px';
+                return { left: size, top: size };
             }
             scene_shown(next) {
                 return next ?? true;
@@ -37603,8 +37634,10 @@ var $;
                 return { width: 480, height: 320 };
             }
             ruler_shown() {
-                const rect = this.pane_rect();
+                const rect = this.view_rect();
                 const room = this.ruler_room();
+                if (!rect)
+                    return false;
                 return rect.width >= room.width && rect.height >= room.height;
             }
             ruler_zero() {
@@ -37664,7 +37697,7 @@ var $;
                 const shift = this.camera_shift();
                 const at = tick.at * zoom + (axis === 'x' ? shift[0] : shift[1]);
                 return axis === 'x'
-                    ? { left: (at - this.ruler_size()) + 'px' }
+                    ? { left: at + 'px' }
                     : { top: at + 'px' };
             }
             span_style(axis) {
@@ -37672,7 +37705,7 @@ var $;
                 if (!span)
                     return {};
                 return axis === 'x'
-                    ? { left: (span.at - this.ruler_size()) + 'px', width: span.size + 'px' }
+                    ? { left: span.at + 'px', width: span.size + 'px' }
                     : { top: span.at + 'px', height: span.size + 'px' };
             }
             gap_views() {
@@ -38279,7 +38312,7 @@ var $;
                 return { x: spot.x + width + this.copy_gap(), y: spot.y };
             }
             pane_rect() {
-                const rect = this.view_rect();
+                const rect = this.Field().view_rect();
                 if (!rect)
                     return { left: 0, top: 0, width: 0, height: 0 };
                 return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
@@ -39829,6 +39862,14 @@ var $;
             overflow: 'hidden',
             '--bog_vmap_board': `color-mix( in oklch, ${$mol_theme.back}, ${$mol_theme.shade} 25% )`,
             background: { color: $mol_style_func.vary('--bog_vmap_board') },
+            Field: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                overflow: 'hidden',
+            },
             Scene: {
                 position: 'absolute',
                 top: 0,
@@ -54582,18 +54623,18 @@ var $;
             const timers = timers_fake($);
             const { pane } = pane_make($);
             const frame_before = pane.Scene(pane.scene_key());
-            $mol_assert_equal(pane.sub()[0], frame_before);
+            $mol_assert_equal(pane.field_sub()[0], frame_before);
             pane.scene_restart();
             $mol_assert_equal(pane.scene_shown(), false);
-            $mol_assert_equal(pane.sub().includes(frame_before), false);
-            $mol_assert_equal(pane.sub().some(kid => kid === pane.Scene(pane.scene_key())), false);
-            $mol_assert_equal(pane.sub()[0], pane.Overlay());
+            $mol_assert_equal(pane.field_sub().includes(frame_before), false);
+            $mol_assert_equal(pane.field_sub().some(kid => kid === pane.Scene(pane.scene_key())), false);
+            $mol_assert_equal(pane.field_sub()[0], pane.Overlay());
             const remount = timers.at(-1);
             $mol_assert_equal(remount.delay, pane.remount_delay());
             remount.task();
             $mol_assert_equal(pane.scene_shown(), true);
-            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub()[0] !== frame_before, true);
+            $mol_assert_equal(pane.field_sub()[0], pane.Scene(pane.scene_key()));
+            $mol_assert_equal(pane.field_sub()[0] !== frame_before, true);
         },
         'scene_restart gives a fresh frame and clears stalled'($) {
             const timers = timers_fake($);
@@ -54601,7 +54642,7 @@ var $;
             pane.warmed(true);
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
-            const frame_before = pane.sub()[0];
+            const frame_before = pane.field_sub()[0];
             $mol_assert_equal(frame_before, pane.Scene(pane.scene_key()));
             pane.stalled(true);
             posted.length = 0;
@@ -54610,8 +54651,8 @@ var $;
             $mol_assert_equal(pane.stalled(), false);
             $mol_assert_equal(pane.ready(), false);
             $mol_assert_equal(pane.warmed(), false);
-            $mol_assert_equal(pane.sub()[0] !== frame_before, true);
-            const layers = pane.sub();
+            $mol_assert_equal(pane.field_sub()[0] !== frame_before, true);
+            const layers = pane.field_sub();
             const kept = [
                 pane.Scene(pane.scene_key()),
                 pane.Overlay(),
@@ -54653,7 +54694,7 @@ var $;
             $mol_assert_ok(one.pane.scene_key() !== two.pane.scene_key());
             $mol_assert_ok(one.pane.scene_key().includes('https://one.test/web.js'));
             $mol_assert_equal(one.pane.scene_generation(), two.pane.scene_generation());
-            $mol_assert_ok(one.pane.sub()[0] !== two.pane.sub()[0]);
+            $mol_assert_ok(one.pane.field_sub()[0] !== two.pane.field_sub()[0]);
         },
         'a relayed click arms the watchdog and sizes disarm it'($) {
             timers_fake($);
@@ -57016,7 +57057,7 @@ var $;
             ...over,
         };
     };
-    const menus = (pane) => pane.sub().filter(view => view instanceof $bog_vmap_app_menu);
+    const menus = (pane) => pane.field_sub().filter(view => view instanceof $bog_vmap_app_menu);
     $mol_test({
         'a right click on a node picks it alone, on a picked one keeps the set, on bare canvas keeps the pick'($) {
             const pane = menu_pane($);
@@ -57226,7 +57267,7 @@ var $;
             $mol_assert_like(pane.ruler_zero(), { x: box.x, y: box.y });
             $mol_assert_ok(pane.ruler_ticks('x').some(tick => tick.label === 0 && tick.at === box.x));
             pane.entered(null);
-            pane.pane_rect = () => ({ left: 0, top: 0, width: 300, height: 200 });
+            pane.view_rect = () => ({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
             stage.redraw();
             $mol_assert_equal(pane.ruler_shown(), false);
             $mol_assert_like(pane.ruler_views(), []);
@@ -57247,6 +57288,96 @@ var $;
             $mol_assert_ok(span);
             $mol_assert_equal(span.size, box.width * pane.camera_zoom());
             $mol_assert_equal(pane.span_style('x').width, box.width * pane.camera_zoom() + 'px');
+        },
+        'the rulers take their own field, and the screen starts where the field starts'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            $mol_assert_equal(pane.ruler_shown(), true);
+            $mol_assert_like(pane.field_style(), { left: '20px', top: '20px' });
+            $mol_assert_like(pane.sub(), [pane.Field(), pane.Ruler('x'), pane.Ruler('y')]);
+            $mol_assert_equal(pane.field_sub().includes(pane.Overlay()), true);
+            $mol_assert_equal(pane.sub().includes(pane.Overlay()), false);
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.redraw();
+            $mol_assert_like(pane.pane_rect(), {
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+            });
+            pane.view_rect = () => ({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
+            stage.redraw();
+            $mol_assert_equal(pane.ruler_shown(), false);
+            $mol_assert_like(pane.field_style(), { left: '0px', top: '0px' });
+        },
+        'the mark of zero stands over the zero of the field and inside its own band'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const size = pane.ruler_size();
+            $mol_assert_equal(size, 20);
+            for (const axis of ['x', 'y']) {
+                const index = pane.ruler_ticks(axis).findIndex(tick => tick.at === 0);
+                $mol_assert_ok(index >= 0);
+                const side = axis === 'x' ? 'left' : 'top';
+                const inside = parseFloat(pane.tick_style(axis + ':' + index)[side]);
+                const band = parseFloat(pane.ruler_style(axis)[side]);
+                $mol_assert_equal(inside, 0);
+                $mol_assert_equal(band + inside, size);
+            }
+        },
+        'a point of the field is the same point for the pointer and for the paint'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.redraw();
+            $mol_assert_like(pane.screen_point({ clientX: room.left + size + 90, clientY: room.top + size + 70 }), [90, 70]);
+            stage.drop(calc, [room.left + size + 90, room.top + size + 70]);
+            const box = pane.part_box('Calc');
+            const spot = stage.app.spots()['Calc'];
+            $mol_assert_equal(box.left, spot.x * pane.camera_zoom() + pane.camera_shift()[0]);
+            $mol_assert_like(pane.world_point({ clientX: room.left + size + box.left, clientY: room.top + size + box.top }), [spot.x, spot.y]);
+        },
+        'showing everything leaves the ruler bands clear'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([500, 400]));
+            stage.redraw();
+            pane.camera_reset();
+            stage.redraw();
+            for (const name of ['Calc', 'Map']) {
+                const box = pane.part_box(name);
+                $mol_assert_equal(box.left >= 0, true);
+                $mol_assert_equal(box.top >= 0, true);
+            }
         },
         'numbers show up on hover over a neighbour and only when something is picked'($) {
             const stage = $bog_vmap_app_flow_stage($);
@@ -59850,7 +59981,8 @@ var $;
         const rect = $_1.$bog_vmap_app_flow_rect;
         pane.dom_node().getBoundingClientRect = () => rect;
         pane.view_rect = () => rect;
-        pane.Touch().view_rect = () => rect;
+        pane.Field().view_rect = () => rect;
+        pane.Field().Touch().view_rect = () => rect;
         if (over.mute) {
             deliver({ kind: 'ready' });
             silent = true;

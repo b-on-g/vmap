@@ -44659,6 +44659,20 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
+		field_style(){
+			return {};
+		}
+		field_sub(){
+			return [];
+		}
+		Field(){
+			const obj = new this.$.$bog_vmap_app_pane_field();
+			(obj.style) = () => ((this.field_style()));
+			(obj.sub) = () => ((this.field_sub()));
+			(obj.camera_shift) = (next) => ((this.camera_shift(next)));
+			(obj.camera_zoom) = (next) => ((this.camera_zoom(next)));
+			return obj;
+		}
 		overlay_style(){
 			return {};
 		}
@@ -44694,20 +44708,6 @@ var $;
 			if(next !== undefined) return next;
 			return null;
 		}
-		Overlay(){
-			const obj = new this.$.$bog_vmap_app_pane_overlay();
-			(obj.style) = () => ((this.overlay_style()));
-			(obj.frames) = () => ((this.frames()));
-			(obj.frame_style) = (id) => ((this.frame_style(id)));
-			(obj.inner) = () => ((this.inner_shown()));
-			(obj.inner_style) = () => ((this.inner_style()));
-			(obj.press) = (next) => ((this.node_press(next)));
-			(obj.move) = (next) => ((this.node_move(next)));
-			(obj.release) = (next) => ((this.node_release(next)));
-			(obj.away) = (next) => ((this.node_away(next)));
-			(obj.context) = (next) => ((this.node_context(next)));
-			return obj;
-		}
 		wire_lines(){
 			return [];
 		}
@@ -44717,36 +44717,14 @@ var $;
 		wire_drag_geometry(){
 			return "";
 		}
-		Wire(){
-			const obj = new this.$.$bog_vmap_app_wire();
-			(obj.lines) = () => ((this.wire_lines()));
-			(obj.dots) = () => ((this.wire_dots()));
-			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
-			return obj;
-		}
 		value_labels(){
 			return [];
-		}
-		Values(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.value_labels()));
-			return obj;
 		}
 		name_views(){
 			return [];
 		}
-		Names(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.name_views()));
-			return obj;
-		}
 		error_marks(){
 			return [];
-		}
-		Marks(){
-			const obj = new this.$.$mol_view();
-			(obj.sub) = () => ((this.error_marks()));
-			return obj;
 		}
 		label_style(id){
 			return {};
@@ -44894,15 +44872,6 @@ var $;
 		menu_board(next){
 			if(next !== undefined) return next;
 			return null;
-		}
-		Touch(){
-			const obj = new this.$.$mol_touch();
-			(obj.allow_draw) = () => (false);
-			(obj.allow_pan) = () => (true);
-			(obj.allow_zoom) = () => (true);
-			(obj.pan) = (next) => ((this.camera_shift(next)));
-			(obj.zoom) = (next) => ((this.camera_zoom(next)));
-			return obj;
 		}
 		attr(){
 			return {
@@ -45226,13 +45195,43 @@ var $;
 			return obj;
 		}
 		sub(){
-			return [
-				(this.Overlay()), 
-				(this.Wire()), 
-				(this.Values()), 
-				(this.Names()), 
-				(this.Marks())
-			];
+			return [(this.Field())];
+		}
+		Overlay(){
+			const obj = new this.$.$bog_vmap_app_pane_overlay();
+			(obj.style) = () => ((this.overlay_style()));
+			(obj.frames) = () => ((this.frames()));
+			(obj.frame_style) = (id) => ((this.frame_style(id)));
+			(obj.inner) = () => ((this.inner_shown()));
+			(obj.inner_style) = () => ((this.inner_style()));
+			(obj.press) = (next) => ((this.node_press(next)));
+			(obj.move) = (next) => ((this.node_move(next)));
+			(obj.release) = (next) => ((this.node_release(next)));
+			(obj.away) = (next) => ((this.node_away(next)));
+			(obj.context) = (next) => ((this.node_context(next)));
+			return obj;
+		}
+		Wire(){
+			const obj = new this.$.$bog_vmap_app_wire();
+			(obj.lines) = () => ((this.wire_lines()));
+			(obj.dots) = () => ((this.wire_dots()));
+			(obj.drag_geometry) = () => ((this.wire_drag_geometry()));
+			return obj;
+		}
+		Values(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.value_labels()));
+			return obj;
+		}
+		Names(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.name_views()));
+			return obj;
+		}
+		Marks(){
+			const obj = new this.$.$mol_view();
+			(obj.sub) = () => ((this.error_marks()));
+			return obj;
 		}
 		Label(id){
 			const obj = new this.$.$bog_vmap_app_pane_label();
@@ -45380,22 +45379,15 @@ var $;
 			(obj.fit) = (next) => ((this.camera_reset(next)));
 			return obj;
 		}
-		plugins(){
-			return [...(super.plugins()), (this.Touch())];
-		}
 	};
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_over"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "file_take"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Field"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_press"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_move"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_release"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_away"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "node_context"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_press"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_edit"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "name_draft"));
@@ -45411,7 +45403,6 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_parent"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_enter"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "menu_board"));
-	($mol_mem(($.$bog_vmap_app_pane.prototype), "Touch"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "grip"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "tool_select"));
@@ -45458,6 +45449,11 @@ var $;
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "camera_zoom"));
 	($mol_mem(($.$bog_vmap_app_pane.prototype), "scene_generation"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Scene"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Overlay"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Wire"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Values"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Names"));
+	($mol_mem(($.$bog_vmap_app_pane.prototype), "Marks"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Label"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Name_field"));
@@ -45476,6 +45472,32 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Span"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Ghost"));
 	($mol_mem_key(($.$bog_vmap_app_pane.prototype), "Menu"));
+	($.$bog_vmap_app_pane_field) = class $bog_vmap_app_pane_field extends ($.$mol_view) {
+		Touch(){
+			const obj = new this.$.$mol_touch();
+			(obj.allow_draw) = () => (false);
+			(obj.allow_pan) = () => (true);
+			(obj.allow_zoom) = () => (true);
+			(obj.pan) = (next) => ((this.camera_shift(next)));
+			(obj.zoom) = (next) => ((this.camera_zoom(next)));
+			return obj;
+		}
+		camera_shift(next){
+			if(next !== undefined) return next;
+			const obj = new this.$.$mol_vector_2d(0, 0);
+			return obj;
+		}
+		camera_zoom(next){
+			if(next !== undefined) return next;
+			return 1;
+		}
+		plugins(){
+			return [...(super.plugins()), (this.Touch())];
+		}
+	};
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "Touch"));
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "camera_shift"));
+	($mol_mem(($.$bog_vmap_app_pane_field.prototype), "camera_zoom"));
 	($.$bog_vmap_app_pane_overlay) = class $bog_vmap_app_pane_overlay extends ($.$mol_view) {
 		press(next){
 			if(next !== undefined) return next;
@@ -46020,6 +46042,12 @@ var $;
             }
             sub() {
                 return [
+                    this.Field(),
+                    ...this.ruler_views(),
+                ];
+            }
+            field_sub() {
+                return [
                     ...this.scene_shown() ? [this.Scene(this.scene_key())] : [],
                     this.Overlay(),
                     this.Wire(),
@@ -46035,10 +46063,13 @@ var $;
                     ...this.draft() ? [this.Draft()] : [],
                     ...this.guide_views(),
                     ...this.gap_views(),
-                    ...this.ruler_views(),
                     ...this.ghost_views(),
                     ...this.menu() ? [this.menu_view()] : [],
                 ];
+            }
+            field_style() {
+                const size = this.ruler_size() + 'px';
+                return { left: size, top: size };
             }
             scene_shown(next) {
                 return next ?? true;
@@ -46346,8 +46377,10 @@ var $;
                 return { width: 480, height: 320 };
             }
             ruler_shown() {
-                const rect = this.pane_rect();
+                const rect = this.view_rect();
                 const room = this.ruler_room();
+                if (!rect)
+                    return false;
                 return rect.width >= room.width && rect.height >= room.height;
             }
             ruler_zero() {
@@ -46407,7 +46440,7 @@ var $;
                 const shift = this.camera_shift();
                 const at = tick.at * zoom + (axis === 'x' ? shift[0] : shift[1]);
                 return axis === 'x'
-                    ? { left: (at - this.ruler_size()) + 'px' }
+                    ? { left: at + 'px' }
                     : { top: at + 'px' };
             }
             span_style(axis) {
@@ -46415,7 +46448,7 @@ var $;
                 if (!span)
                     return {};
                 return axis === 'x'
-                    ? { left: (span.at - this.ruler_size()) + 'px', width: span.size + 'px' }
+                    ? { left: span.at + 'px', width: span.size + 'px' }
                     : { top: span.at + 'px', height: span.size + 'px' };
             }
             gap_views() {
@@ -47022,7 +47055,7 @@ var $;
                 return { x: spot.x + width + this.copy_gap(), y: spot.y };
             }
             pane_rect() {
-                const rect = this.view_rect();
+                const rect = this.Field().view_rect();
                 if (!rect)
                     return { left: 0, top: 0, width: 0, height: 0 };
                 return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
@@ -48572,6 +48605,14 @@ var $;
             overflow: 'hidden',
             '--bog_vmap_board': `color-mix( in oklch, ${$mol_theme.back}, ${$mol_theme.shade} 25% )`,
             background: { color: $mol_style_func.vary('--bog_vmap_board') },
+            Field: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                overflow: 'hidden',
+            },
             Scene: {
                 position: 'absolute',
                 top: 0,

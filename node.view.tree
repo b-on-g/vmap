@@ -2257,27 +2257,32 @@ $bog_vmap_app_pane $mol_view
 	Scene* $bog_vmap_app_pane_frame
 		html <= scene_html
 	sub /
-		<= Overlay $bog_vmap_app_pane_overlay
-			style <= overlay_style *
-			frames <= frames /string
-			frame_style* <= frame_style* *
-			inner <= inner_shown \
-			inner_style <= inner_style *
-			press? <=> node_press? null
-			move? <=> node_move? null
-			release? <=> node_release? null
-			away? <=> node_away? null
-			context? <=> node_context? null
-		<= Wire $bog_vmap_app_wire
-			lines <= wire_lines /$bog_vmap_app_wire_line
-			dots <= wire_dots /$bog_vmap_app_wire_dot
-			drag_geometry <= wire_drag_geometry \
-		<= Values $mol_view
-			sub <= value_labels /$mol_view
-		<= Names $mol_view
-			sub <= name_views /$mol_view
-		<= Marks $mol_view
-			sub <= error_marks /$mol_view
+		<= Field $bog_vmap_app_pane_field
+			style <= field_style *
+			sub <= field_sub /$mol_view
+			camera_shift? <=> camera_shift?
+			camera_zoom? <=> camera_zoom?
+	Overlay $bog_vmap_app_pane_overlay
+		style <= overlay_style *
+		frames <= frames /string
+		frame_style* <= frame_style* *
+		inner <= inner_shown \
+		inner_style <= inner_style *
+		press? <=> node_press? null
+		move? <=> node_move? null
+		release? <=> node_release? null
+		away? <=> node_away? null
+		context? <=> node_context? null
+	Wire $bog_vmap_app_wire
+		lines <= wire_lines /$bog_vmap_app_wire_line
+		dots <= wire_dots /$bog_vmap_app_wire_dot
+		drag_geometry <= wire_drag_geometry \
+	Values $mol_view
+		sub <= value_labels /$mol_view
+	Names $mol_view
+		sub <= name_views /$mol_view
+	Marks $mol_view
+		sub <= error_marks /$mol_view
 	Label* $bog_vmap_app_pane_label
 		style <= label_style* *
 		lines <= label_lines* /string
@@ -2376,6 +2381,12 @@ $bog_vmap_app_pane $mol_view
 		enter? <=> menu_enter? null
 		board? <=> menu_board? null
 		fit? <=> camera_reset?
+
+$bog_vmap_app_pane_field $mol_view
+	camera_shift? $mol_vector_2d<number> /
+		0
+		0
+	camera_zoom? 1
 	plugins /
 		^
 		<= Touch $mol_touch

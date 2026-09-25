@@ -13770,18 +13770,18 @@ var $;
             const timers = timers_fake($);
             const { pane } = pane_make($);
             const frame_before = pane.Scene(pane.scene_key());
-            $mol_assert_equal(pane.sub()[0], frame_before);
+            $mol_assert_equal(pane.field_sub()[0], frame_before);
             pane.scene_restart();
             $mol_assert_equal(pane.scene_shown(), false);
-            $mol_assert_equal(pane.sub().includes(frame_before), false);
-            $mol_assert_equal(pane.sub().some(kid => kid === pane.Scene(pane.scene_key())), false);
-            $mol_assert_equal(pane.sub()[0], pane.Overlay());
+            $mol_assert_equal(pane.field_sub().includes(frame_before), false);
+            $mol_assert_equal(pane.field_sub().some(kid => kid === pane.Scene(pane.scene_key())), false);
+            $mol_assert_equal(pane.field_sub()[0], pane.Overlay());
             const remount = timers.at(-1);
             $mol_assert_equal(remount.delay, pane.remount_delay());
             remount.task();
             $mol_assert_equal(pane.scene_shown(), true);
-            $mol_assert_equal(pane.sub()[0], pane.Scene(pane.scene_key()));
-            $mol_assert_equal(pane.sub()[0] !== frame_before, true);
+            $mol_assert_equal(pane.field_sub()[0], pane.Scene(pane.scene_key()));
+            $mol_assert_equal(pane.field_sub()[0] !== frame_before, true);
         },
         'scene_restart gives a fresh frame and clears stalled'($) {
             const timers = timers_fake($);
@@ -13789,7 +13789,7 @@ var $;
             pane.warmed(true);
             pane.watchdog();
             answer({ kind: 'sizes', sizes: {} });
-            const frame_before = pane.sub()[0];
+            const frame_before = pane.field_sub()[0];
             $mol_assert_equal(frame_before, pane.Scene(pane.scene_key()));
             pane.stalled(true);
             posted.length = 0;
@@ -13798,8 +13798,8 @@ var $;
             $mol_assert_equal(pane.stalled(), false);
             $mol_assert_equal(pane.ready(), false);
             $mol_assert_equal(pane.warmed(), false);
-            $mol_assert_equal(pane.sub()[0] !== frame_before, true);
-            const layers = pane.sub();
+            $mol_assert_equal(pane.field_sub()[0] !== frame_before, true);
+            const layers = pane.field_sub();
             const kept = [
                 pane.Scene(pane.scene_key()),
                 pane.Overlay(),
@@ -13841,7 +13841,7 @@ var $;
             $mol_assert_ok(one.pane.scene_key() !== two.pane.scene_key());
             $mol_assert_ok(one.pane.scene_key().includes('https://one.test/web.js'));
             $mol_assert_equal(one.pane.scene_generation(), two.pane.scene_generation());
-            $mol_assert_ok(one.pane.sub()[0] !== two.pane.sub()[0]);
+            $mol_assert_ok(one.pane.field_sub()[0] !== two.pane.field_sub()[0]);
         },
         'a relayed click arms the watchdog and sizes disarm it'($) {
             timers_fake($);
@@ -16204,7 +16204,7 @@ var $;
             ...over,
         };
     };
-    const menus = (pane) => pane.sub().filter(view => view instanceof $bog_vmap_app_menu);
+    const menus = (pane) => pane.field_sub().filter(view => view instanceof $bog_vmap_app_menu);
     $mol_test({
         'a right click on a node picks it alone, on a picked one keeps the set, on bare canvas keeps the pick'($) {
             const pane = menu_pane($);
@@ -16414,7 +16414,7 @@ var $;
             $mol_assert_like(pane.ruler_zero(), { x: box.x, y: box.y });
             $mol_assert_ok(pane.ruler_ticks('x').some(tick => tick.label === 0 && tick.at === box.x));
             pane.entered(null);
-            pane.pane_rect = () => ({ left: 0, top: 0, width: 300, height: 200 });
+            pane.view_rect = () => ({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
             stage.redraw();
             $mol_assert_equal(pane.ruler_shown(), false);
             $mol_assert_like(pane.ruler_views(), []);
@@ -16435,6 +16435,96 @@ var $;
             $mol_assert_ok(span);
             $mol_assert_equal(span.size, box.width * pane.camera_zoom());
             $mol_assert_equal(pane.span_style('x').width, box.width * pane.camera_zoom() + 'px');
+        },
+        'the rulers take their own field, and the screen starts where the field starts'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            $mol_assert_equal(pane.ruler_shown(), true);
+            $mol_assert_like(pane.field_style(), { left: '20px', top: '20px' });
+            $mol_assert_like(pane.sub(), [pane.Field(), pane.Ruler('x'), pane.Ruler('y')]);
+            $mol_assert_equal(pane.field_sub().includes(pane.Overlay()), true);
+            $mol_assert_equal(pane.sub().includes(pane.Overlay()), false);
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.redraw();
+            $mol_assert_like(pane.pane_rect(), {
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+            });
+            pane.view_rect = () => ({ left: 0, top: 0, width: 300, height: 200, right: 300, bottom: 200 });
+            stage.redraw();
+            $mol_assert_equal(pane.ruler_shown(), false);
+            $mol_assert_like(pane.field_style(), { left: '0px', top: '0px' });
+        },
+        'the mark of zero stands over the zero of the field and inside its own band'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const size = pane.ruler_size();
+            $mol_assert_equal(size, 20);
+            for (const axis of ['x', 'y']) {
+                const index = pane.ruler_ticks(axis).findIndex(tick => tick.at === 0);
+                $mol_assert_ok(index >= 0);
+                const side = axis === 'x' ? 'left' : 'top';
+                const inside = parseFloat(pane.tick_style(axis + ':' + index)[side]);
+                const band = parseFloat(pane.ruler_style(axis)[side]);
+                $mol_assert_equal(inside, 0);
+                $mol_assert_equal(band + inside, size);
+            }
+        },
+        'a point of the field is the same point for the pointer and for the paint'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.redraw();
+            $mol_assert_like(pane.screen_point({ clientX: room.left + size + 90, clientY: room.top + size + 70 }), [90, 70]);
+            stage.drop(calc, [room.left + size + 90, room.top + size + 70]);
+            const box = pane.part_box('Calc');
+            const spot = stage.app.spots()['Calc'];
+            $mol_assert_equal(box.left, spot.x * pane.camera_zoom() + pane.camera_shift()[0]);
+            $mol_assert_like(pane.world_point({ clientX: room.left + size + box.left, clientY: room.top + size + box.top }), [spot.x, spot.y]);
+        },
+        'showing everything leaves the ruler bands clear'($) {
+            const stage = $bog_vmap_app_flow_stage($);
+            const pane = stage.pane;
+            const room = $bog_vmap_app_flow_rect;
+            const size = pane.ruler_size();
+            pane.Field().view_rect = () => ({
+                left: room.left + size,
+                top: room.top + size,
+                width: room.width - size,
+                height: room.height - size,
+                right: room.right,
+                bottom: room.bottom,
+            });
+            stage.drop(calc, stage.client([200, 150]));
+            stage.drop(map, stage.client([500, 400]));
+            stage.redraw();
+            pane.camera_reset();
+            stage.redraw();
+            for (const name of ['Calc', 'Map']) {
+                const box = pane.part_box(name);
+                $mol_assert_equal(box.left >= 0, true);
+                $mol_assert_equal(box.top >= 0, true);
+            }
         },
         'numbers show up on hover over a neighbour and only when something is picked'($) {
             const stage = $bog_vmap_app_flow_stage($);
@@ -18945,7 +19035,8 @@ var $;
         const rect = $_1.$bog_vmap_app_flow_rect;
         pane.dom_node().getBoundingClientRect = () => rect;
         pane.view_rect = () => rect;
-        pane.Touch().view_rect = () => rect;
+        pane.Field().view_rect = () => rect;
+        pane.Field().Touch().view_rect = () => rect;
         if (over.mute) {
             deliver({ kind: 'ready' });
             silent = true;
