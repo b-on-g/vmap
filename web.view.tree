@@ -2678,6 +2678,7 @@ $bog_vmap_app_inspect_value $mol_list
 	binds /string
 	nodes *
 	alarm? \
+	note \
 	editable true
 	rows <= editors /$mol_view
 	Alarm $mol_status
@@ -2702,6 +2703,7 @@ $bog_vmap_app_inspect_value $mol_list
 		klass <= seq_klass false
 		binds <= binds
 		nodes <= nodes
+		note <= note
 		alarm? <=> alarm?
 		editable <= editable
 	Bind $bog_vmap_app_inspect_value_bind
@@ -2745,8 +2747,11 @@ $bog_vmap_app_inspect_value_seq $mol_list
 	alarm? \
 	keyed false
 	klass false
+	note \
 	editable true
 	rows <= seq_sub /$mol_view
+	Note $mol_status
+		status <= note
 	Class_name $mol_string
 		hint \класс
 		value? <=> class_name? \
@@ -2849,6 +2854,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 	drop? null
 	editable true
 	frozen \
+	note \
 	name <= sign
 	bid <= owner
 	label /
@@ -2859,6 +2865,7 @@ $bog_vmap_app_inspect_row $mol_form_field
 		tree? <=> value?
 		binds <= binds
 		nodes <= nodes
+		note <= note
 		editable <= editable
 	Frozen $mol_status
 		status <= frozen
@@ -2925,6 +2932,7 @@ $bog_vmap_app_inspect $mol_page
 			content <= inherited_rows /$mol_view
 	cell*? null
 	frozen_note \поле заморожено: правка значения сделает его изменяемым
+	sub_note \
 	Empty $mol_status
 		status <= empty_note \Нечего править: в исходнике нет объявления класса
 	Node $bog_vmap_lang_node
@@ -2944,6 +2952,7 @@ $bog_vmap_app_inspect $mol_page
 		changeable? <=> row_changeable*? false
 		drop? <=> row_drop*? null
 		frozen <= row_frozen* \
+		note <= row_note* \
 		binds <= binds /string
 		nodes <= nodes *
 		editable <= editable
@@ -3262,6 +3271,7 @@ $bog_vmap_app $mol_page
 		base? <=> node_base? \
 		bases <= node_bases /string
 		base_titles <= node_base_titles *
+		sub_note \Готовые детали берутся в палитре: вкладка «Ассеты» слева, раздел «Готовые детали». Клик по детали ставит её на холст
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null

@@ -26915,6 +26915,9 @@ var $;
 			if(next !== undefined) return next;
 			return "";
 		}
+		note(){
+			return "";
+		}
 		editable(){
 			return true;
 		}
@@ -26959,6 +26962,7 @@ var $;
 			(obj.klass) = () => ((this.seq_klass()));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.note) = () => ((this.note()));
 			(obj.alarm) = (next) => ((this.alarm(next)));
 			(obj.editable) = () => ((this.editable()));
 			return obj;
@@ -27107,11 +27111,19 @@ var $;
 		klass(){
 			return false;
 		}
+		note(){
+			return "";
+		}
 		editable(){
 			return true;
 		}
 		rows(){
 			return (this.seq_sub());
+		}
+		Note(){
+			const obj = new this.$.$mol_status();
+			(obj.status) = () => ((this.note()));
+			return obj;
 		}
 		Class_name(){
 			const obj = new this.$.$mol_string();
@@ -27153,6 +27165,7 @@ var $;
 	($mol_mem_key(($.$bog_vmap_app_inspect_value_seq.prototype), "item_drop"));
 	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "tree"));
 	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "alarm"));
+	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "Note"));
 	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "Class_name"));
 	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "Items"));
 	($mol_mem(($.$bog_vmap_app_inspect_value_seq.prototype), "Add"));
@@ -27566,8 +27579,8 @@ var $;
             item_add() {
                 const tree = this.tree();
                 const blank = this.keyed()
-                    ? tree.struct('key', [tree.struct('null')])
-                    : tree.struct('null');
+                    ? tree.struct('key', [tree.data('')])
+                    : tree.data('');
                 this.tree(tree.clone([...tree.kids, blank]));
             }
             item_drop(index) {
@@ -27579,6 +27592,7 @@ var $;
                     ...this.klass() ? [this.Class_name()] : [],
                     this.Items(),
                     this.Add(),
+                    ...this.note() ? [this.Note()] : [],
                 ];
             }
         }
@@ -27743,6 +27757,7 @@ var $;
 			(obj.tree) = (next) => ((this.value(next)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
+			(obj.note) = () => ((this.note()));
 			(obj.editable) = () => ((this.editable()));
 			return obj;
 		}
@@ -27782,6 +27797,9 @@ var $;
 			return true;
 		}
 		frozen(){
+			return "";
+		}
+		note(){
 			return "";
 		}
 		name(){
@@ -28108,6 +28126,9 @@ var $;
 		row_frozen(id){
 			return "";
 		}
+		row_note(id){
+			return "";
+		}
 		binds(){
 			return [];
 		}
@@ -28186,6 +28207,9 @@ var $;
 		frozen_note(){
 			return "поле заморожено: правка значения сделает его изменяемым";
 		}
+		sub_note(){
+			return "";
+		}
 		Empty(){
 			const obj = new this.$.$mol_status();
 			(obj.status) = () => ((this.empty_note()));
@@ -28220,6 +28244,7 @@ var $;
 			(obj.changeable) = (next) => ((this.row_changeable(id, next)));
 			(obj.drop) = (next) => ((this.row_drop(id, next)));
 			(obj.frozen) = () => ((this.row_frozen(id)));
+			(obj.note) = () => ((this.row_note(id)));
 			(obj.binds) = () => ((this.binds()));
 			(obj.nodes) = () => ((this.nodes()));
 			(obj.editable) = () => ((this.editable()));
@@ -28768,6 +28793,11 @@ var $;
             }
             row_owner(name) {
                 return this.owners().get(name) ?? '';
+            }
+            row_note(name) {
+                if (sign_of(this.row_sign(name)).name !== 'sub')
+                    return '';
+                return this.sub_note();
             }
             row_inherited(name) {
                 return !this.Node().prop_names().includes(name);
@@ -30508,6 +30538,7 @@ var $;
 			(obj.base) = (next) => ((this.node_base(next)));
 			(obj.bases) = () => ((this.node_bases()));
 			(obj.base_titles) = () => ((this.node_base_titles()));
+			(obj.sub_note) = () => ("Готовые детали берутся в палитре: вкладка «Ассеты» слева, раздел «Готовые детали». Клик по детали ставит её на холст");
 			(obj.title_note) = () => ((this.node_title_note()));
 			(obj.renamable) = () => ((this.node_renamable()));
 			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
