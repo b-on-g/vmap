@@ -38124,6 +38124,18 @@ var $;
                 border: { left: { width: '1px', style: 'solid', color: $mol_theme.line } },
             },
         });
+        $mol_style_define($bog_vmap_app_inspect_value_item, {
+            flex: { wrap: 'wrap' },
+            gap: $mol_gap.text,
+            Key: {
+                flex: { grow: 1, shrink: 1, basis: '6rem' },
+                minWidth: '6rem',
+            },
+            Value: {
+                flex: { grow: 999, shrink: 1, basis: '8rem' },
+                minWidth: '8rem',
+            },
+        });
     })($$ = $.$$ || ($.$$ = {}));
 })($ || ($ = {}));
 
@@ -39626,7 +39638,7 @@ var $;
 		Left_check(){
 			const obj = new this.$.$mol_check_icon();
 			(obj.Icon) = () => ((this.Left_icon()));
-			(obj.hint) = () => ("Левая колонка: сцены, слои и ассеты. Shift+\\ прячет и возвращает обе колонки");
+			(obj.hint) = () => ("Левая колонка: сцены, слои и детали. Shift+\\ прячет и возвращает обе колонки");
 			(obj.checked) = (next) => ((this.left_showed(next)));
 			return obj;
 		}
@@ -39849,14 +39861,25 @@ var $;
 		Left_tabs(){
 			const obj = new this.$.$mol_switch();
 			(obj.value) = (next) => ((this.left_tab(next)));
-			(obj.options) = () => ({"layers": "Слои", "assets": "Ассеты"});
+			(obj.options) = () => ({"layers": "Слои", "assets": "Детали"});
 			return obj;
 		}
 		left_panel(){
 			return null;
 		}
+		right_width(){
+			return 272;
+		}
 		right_content(){
 			return [];
+		}
+		grip_press(next){
+			if(next !== undefined) return next;
+			return null;
+		}
+		grip_reset(next){
+			if(next !== undefined) return next;
+			return null;
 		}
 		align_act(id, next){
 			if(next !== undefined) return next;
@@ -40329,7 +40352,14 @@ var $;
 		}
 		Right(){
 			const obj = new this.$.$mol_view();
+			(obj.style) = () => ({"width": (this.right_width())});
 			(obj.sub) = () => ((this.right_content()));
+			return obj;
+		}
+		Right_grip(){
+			const obj = new this.$.$mol_view();
+			(obj.attr) = () => ({"bog_vmap_app_right_grip": "", "title": "Ширина панели: тяните мышью, двойной клик вернёт обычную"});
+			(obj.event) = () => ({"pointerdown": (next) => (this.grip_press(next)), "dblclick": (next) => (this.grip_reset(next))});
 			return obj;
 		}
 		right_panel(){
@@ -40402,7 +40432,7 @@ var $;
 			(obj.base) = (next) => ((this.node_base(next)));
 			(obj.bases) = () => ((this.node_bases()));
 			(obj.base_titles) = () => ((this.node_base_titles()));
-			(obj.sub_note) = () => ("Готовые детали берутся в палитре: вкладка «Ассеты» слева, раздел «Готовые детали». Клик по детали ставит её на холст");
+			(obj.sub_note) = () => ("Готовые детали берутся в палитре: вкладка «Детали» слева, раздел «Готовые детали». Клик по детали ставит её на холст");
 			(obj.title_note) = () => ((this.node_title_note()));
 			(obj.renamable) = () => ((this.node_renamable()));
 			(obj.cell) = (id, next) => ((this.node_cell(id, next)));
@@ -40560,6 +40590,8 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "Right_icon"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Right_check"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Left_tabs"));
+	($mol_mem(($.$bog_vmap_app.prototype), "grip_press"));
+	($mol_mem(($.$bog_vmap_app.prototype), "grip_reset"));
 	($mol_mem_key(($.$bog_vmap_app.prototype), "align_act"));
 	($mol_mem(($.$bog_vmap_app.prototype), "entered"));
 	($mol_mem(($.$bog_vmap_app.prototype), "link_add"));
@@ -40610,6 +40642,7 @@ var $;
 	($mol_mem(($.$bog_vmap_app.prototype), "store"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Left"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Right"));
+	($mol_mem(($.$bog_vmap_app.prototype), "Right_grip"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Right_tabs"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Align"));
 	($mol_mem(($.$bog_vmap_app.prototype), "Canvas"));
@@ -42225,8 +42258,46 @@ var $;
                 return [
                     ...this.left_showed() ? [this.Left()] : [],
                     this.Canvas(),
-                    ...this.right_showed() ? [this.Right()] : [],
+                    ...this.right_showed() ? [this.Right_grip(), this.Right()] : [],
                 ];
+            }
+            right_width_min() {
+                return 240;
+            }
+            right_width_max() {
+                return 720;
+            }
+            right_width(next) {
+                const kept = this.$.$mol_state_session.value('vmap_right_width', next);
+                if (kept === null || kept === undefined)
+                    return super.right_width();
+                return Math.max(this.right_width_min(), Math.min(this.right_width_max(), kept));
+            }
+            grip_held = null;
+            grip_from(next) {
+                if (next !== undefined)
+                    this.grip_held = next;
+                return this.grip_held;
+            }
+            grip_press(event) {
+                if (!event)
+                    return null;
+                event.preventDefault();
+                this.grip_from({ x: event.clientX, width: this.right_width() });
+                return null;
+            }
+            grip_move(event) {
+                const from = this.grip_from();
+                if (!from)
+                    return;
+                this.right_width(from.width + from.x - event.clientX);
+            }
+            grip_release() {
+                this.grip_from(null);
+            }
+            grip_reset(event) {
+                this.right_width(super.right_width());
+                return null;
             }
             left_panel() {
                 return this.left_tab() === 'layers' ? this.Layers() : this.Shelf();
@@ -42743,6 +42814,8 @@ var $;
             drag_move(event) {
                 if (!event)
                     return;
+                if (this.grip_from())
+                    this.grip_move(event);
                 if (!this.dragged())
                     return;
                 this.Shelf().drag_x(event.clientX);
@@ -42751,6 +42824,8 @@ var $;
             drag_end(event) {
                 if (!event)
                     return;
+                if (this.grip_from())
+                    this.grip_release();
                 if (!this.dragged())
                     return;
                 this.Shelf().dragged('');
@@ -43720,6 +43795,12 @@ var $;
             $mol_mem
         ], $bog_vmap_app.prototype, "notes", null);
         __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "grip_press", null);
+        __decorate([
+            $mol_action
+        ], $bog_vmap_app.prototype, "grip_reset", null);
+        __decorate([
             $mol_mem
         ], $bog_vmap_app.prototype, "align_group", null);
         __decorate([
@@ -43878,12 +43959,23 @@ var $;
                 minHeight: 0,
             },
             Right: {
-                width: '17rem',
+                minWidth: 0,
                 maxWidth: '100%',
                 display: 'grid',
                 gridTemplateRows: 'auto minmax(0, 1fr)',
                 gridTemplateColumns: 'minmax(0, 1fr)',
                 background: { color: $mol_theme.card },
+            },
+            Right_grip: {
+                flex: { grow: 0, shrink: 0, basis: '.5rem' },
+                margin: { right: '-.5rem' },
+                position: 'relative',
+                zIndex: 4,
+                cursor: 'col-resize',
+                touchAction: 'none',
+                ':hover': {
+                    background: { color: $mol_theme.line },
+                },
             },
             Canvas: {
                 flex: { grow: 1, shrink: 1, basis: 0 },
@@ -43937,6 +44029,9 @@ var $;
                         top: 0,
                         bottom: 0,
                         right: 0,
+                    },
+                    Right_grip: {
+                        display: 'none',
                     },
                 },
             },
@@ -47191,11 +47286,11 @@ var $;
             }
             part_outs(name) {
                 const fed = new Set(this.wires().filter(link => link.to === name).map(link => link.to_prop));
-                const named = this.board(name);
-                return this.part_ports(name).filter(port => port.own
+                const written = new Set(this.part_overs(name));
+                return this.part_ports(name).filter(port => written.has(port.name)
                     && !fed.has(port.name)
                     && $bog_vmap_app_wire_plain(port)
-                    && !(named && port.name === 'title'));
+                    && port.name !== 'title');
             }
             part_shown(name) {
                 const box = this.part_box(name);
@@ -48021,6 +48116,14 @@ var $;
                 color: $mol_theme.card,
                 font: { size: '.75rem', weight: 'bolder' },
                 pointerEvents: 'auto',
+            },
+            Text_new: {
+                position: 'absolute',
+                background: { color: $mol_theme.card },
+                outline: '1px solid ' + String($mol_theme.focus),
+                padding: { left: '0px', right: '0px', top: '0px', bottom: '0px' },
+                transition: 'none',
+                zIndex: 3,
             },
             Text_field: {
                 position: 'absolute',

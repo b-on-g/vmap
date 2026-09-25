@@ -1608,7 +1608,7 @@ $bog_vmap_app $mol_page
 	head /
 		<= Left_check $mol_check_icon
 			Icon <= Left_icon $mol_icon_dock_left
-			hint \Левая колонка: сцены, слои и ассеты. Shift+\ прячет и возвращает обе колонки
+			hint \Левая колонка: сцены, слои и детали. Shift+\ прячет и возвращает обе колонки
 			checked? <=> left_showed?
 		<= Instruments $mol_bar
 			attr *
@@ -1698,10 +1698,19 @@ $bog_vmap_app $mol_page
 				value? <=> left_tab?
 				options *
 					layers \Слои
-					assets \Ассеты
+					assets \Детали
 			<= left_panel null
 	Right $mol_view
+		style *
+			width <= right_width 272
 		sub <= right_content /$mol_view
+	Right_grip $mol_view
+		attr *
+			bog_vmap_app_right_grip \
+			title \Ширина панели: тяните мышью, двойной клик вернёт обычную
+		event *
+			pointerdown? <=> grip_press? null
+			dblclick? <=> grip_reset? null
 	right_panel null
 	Right_tabs $mol_switch
 		value? <=> right_tab?
@@ -1804,7 +1813,7 @@ $bog_vmap_app $mol_page
 		base? <=> node_base? \
 		bases <= node_bases /string
 		base_titles <= node_base_titles *
-		sub_note \Готовые детали берутся в палитре: вкладка «Ассеты» слева, раздел «Готовые детали». Клик по детали ставит её на холст
+		sub_note \Готовые детали берутся в палитре: вкладка «Детали» слева, раздел «Готовые детали». Клик по детали ставит её на холст
 		title_note <= node_title_note \
 		renamable <= node_renamable true
 		cell*? <=> node_cell*? null
