@@ -1977,8 +1977,13 @@ namespace $ {
 					`${ at } шапка ${ Math.round( top!.height ) } плюс тело ${ Math.round( trunk!.height ) } плюс подвал ${ Math.round( feet!.height ) } не дают высоту страницы ${ name } ${ Math.round( page!.height ) }`,
 				)
 				want(
-					got.feet[ name ] === 0 && feet!.height === 0 && feet!.width === 0,
-					`${ at } пустой подвал ${ name } занимает место: ${ got.feet[ name ] } узлов, ${ $bog_vmap_probe_show( feet ) }`,
+					got.feet[ name ] === 0
+						? feet!.height === 0 && feet!.width === 0
+						: feet!.height > 0 && $bog_probe_inside( feet, page ),
+					got.feet[ name ] === 0
+						? `${ at } пустой подвал ${ name } занимает место: ${ $bog_vmap_probe_show( feet ) }`
+						: `${ at } подвал ${ name } из ${ got.feet[ name ] } узлов не уместился на странице:`
+							+ ` ${ $bog_vmap_probe_show( feet ) } против ${ $bog_vmap_probe_show( page ) }`,
 				)
 				want(
 					$bog_probe_inside( tools, top ),
