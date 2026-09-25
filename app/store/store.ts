@@ -220,7 +220,40 @@ namespace $ {
 
 			if( !same ) list.items( links )
 
+			this.spots_tidy( doc, trees )
+
 			return next
+		}
+
+		spots_tidy( doc: $bog_vmap_app_doc, trees: readonly $mol_tree2[] ) {
+
+			const spots = this.doc_spots( doc )
+			const names = Object.keys( spots )
+			if( !names.length ) return
+
+			const root = trees[ 0 ]
+			if( !root ) return
+
+			let live: ReadonlySet< string >
+
+			try {
+				const node = this.$.$bog_vmap_lang_node.make({
+					$: this.$,
+					source: $mol_const( root.toString() ),
+				})
+				live = new Set( node.part_names() )
+			} catch( error: unknown ) {
+				if( this.$.$mol_promise_like( error ) ) return
+				return
+			}
+
+			const kept = {} as { [ name: string ]: { x: number, y: number } }
+			for( const name of names ) if( live.has( name ) ) kept[ name ] = spots[ name ]
+
+			if( Object.keys( kept ).length === names.length ) return
+
+			this.doc_spots( doc, kept )
+
 		}
 
 		node( doc: $bog_vmap_app_doc, name: string ) {

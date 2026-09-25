@@ -2742,10 +2742,10 @@ namespace $.$$ {
 		node_rename( name: string, next: string ) {
 			if( !next || next === name ) return
 
-			this.node().property( name ).title( next )
-
 			const spots = { ... this.spots() }
 			const spot = spots[ name ]
+
+			this.node().property( name ).title( next )
 
 			if( spot ) {
 				delete spots[ name ]
