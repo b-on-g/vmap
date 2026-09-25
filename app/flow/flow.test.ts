@@ -3913,3 +3913,37 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+
+	$mol_test({
+
+		'the warning stands in plain sight and only the key work waits under the fold'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const scenes = stage.app.Scenes() as $$.$bog_vmap_app_scenes
+
+			const brief = stage.app.face_brief()
+
+			$mol_assert_ok( brief.includes( 'только в этом браузере' ) )
+			$mol_assert_equal( brief.split( '.' ).filter( one => one.trim() ).length, 1 )
+
+			const foot = scenes.foot()
+
+			$mol_assert_equal( foot[ 0 ], scenes.Face_brief() )
+			$mol_assert_equal( foot.includes( scenes.Face() ), true )
+			$mol_assert_equal( scenes.face_shown(), false )
+			$mol_assert_equal( scenes.Face().rows().includes( scenes.Face().Content() ), false )
+
+			$mol_assert_ok( scenes.Face_brief().dom_node().textContent!.includes( 'только в этом браузере' ) )
+			$mol_assert_equal( scenes.dom_node().textContent!.includes( 'ключ, а не пароль' ), false )
+
+			scenes.face_shown( true )
+			stage.redraw()
+
+			$mol_assert_ok( scenes.dom_node().textContent!.includes( 'ключ, а не пароль' ) )
+
+		},
+
+	})
+
+}
