@@ -255,6 +255,9 @@ $bog_vmap_app $mol_page
 		share_mark* <= node_share_mark* \
 		share*? <=> node_share*? null
 		share_unshare*? <=> node_share_unshare*? null
+		shares <= node_shares /string
+		share_uses* <= node_share_uses* \
+		share_value*? <=> node_share_value*? $mol_tree2_empty
 		editable <= node_editable true
 	Idle $mol_page
 		title \Свойства

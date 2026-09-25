@@ -3658,3 +3658,65 @@ namespace $ {
 	})
 
 }
+
+namespace $ {
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const shared = ( stage: stage, key: string )=> {
+		const seq = stage.app.Inspect().Row( 'style' ).Value().Seq()
+		const at = seq.items().findIndex( ( _, i )=> seq.item_key( i ) === key )
+		stage.click( ( seq.Item( at ) as $$.$bog_vmap_app_inspect_value_item ).Share().dom_node() )
+		stage.redraw()
+	}
+
+	$mol_test({
+
+		'the shared values wait in their own section and are edited there'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const inspect = stage.app.Inspect() as $$.$bog_vmap_app_inspect
+
+			stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 })
+			stage.redraw()
+			stage.click( stage.check( 'Дизайн' ) )
+
+			$mol_assert_equal( inspect.body().includes( inspect.Shares() ), false )
+
+			shared( stage, 'background' )
+
+			$mol_assert_like( inspect.shares(), [ 'background' ] )
+			$mol_assert_ok( inspect.body().includes( inspect.Shares() ) )
+			$mol_assert_equal( inspect.Shares().title(), 'Общие значения' )
+			$mol_assert_like( inspect.share_rows(), [ inspect.Share_row( 'background' ) ] )
+			$mol_assert_equal( inspect.share_row_name( 'background' ), 'background' )
+			$mol_assert_ok( inspect.share_uses( 'background' ).includes( 'узлов 1' ) )
+
+			const value = stage.app.node().tree().data( '#123456' )
+			inspect.share_value( 'background', value )
+			stage.redraw()
+
+			$mol_assert_ok( stage.app.doc_source().includes( 'background \\#123456' ) )
+			$mol_assert_ok( stage.app.doc_source().includes( 'background <= background' ) )
+
+		},
+
+		'a shared name can be picked as the target of a reference'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const inspect = stage.app.Inspect() as $$.$bog_vmap_app_inspect
+
+			stage.app.board_draw({ x: 40, y: 40, width: 200, height: 120 })
+			stage.redraw()
+			stage.click( stage.check( 'Дизайн' ) )
+
+			$mol_assert_equal( inspect.binds().includes( 'background' ), false )
+
+			shared( stage, 'background' )
+
+			$mol_assert_ok( inspect.binds().includes( 'background' ) )
+			$mol_assert_ok( inspect.binds().includes( 'style' ) )
+
+		},
+
+	})
+
+}

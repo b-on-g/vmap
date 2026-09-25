@@ -35,6 +35,10 @@ $bog_vmap_app_inspect $mol_page
 	body /$mol_view
 		<= Rows $mol_list
 			rows <= rows /$mol_view
+		<= Shares $mol_expander
+			title \Общие значения
+			expanded? <=> shares_shown? true
+			content <= share_rows /$mol_view
 		<= Layout $mol_expander
 			title \Раскладка
 			expanded? <=> layout_shown? false
@@ -62,6 +66,17 @@ $bog_vmap_app_inspect $mol_page
 	share_mark* \
 	share*? null
 	share_unshare*? null
+	shares /string
+	share_uses* \
+	share_value*? $mol_tree2_empty
+	Share_row* $mol_form_field
+		name <= share_row_name* \
+		bids / <= share_uses* \
+		control <= Share_value* $bog_vmap_app_inspect_value
+			tree? <=> share_value*? $mol_tree2_empty
+			binds <= binds
+			nodes <= nodes
+			editable <= editable
 	Row* $bog_vmap_app_inspect_row
 		sign <= row_sign* \
 		drop_hint <= row_drop_hint* \

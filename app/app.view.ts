@@ -2256,6 +2256,36 @@ namespace $.$$ {
 			return null
 		}
 
+		override node_shares() {
+			return this.share_names()
+		}
+
+		override node_share_uses( name: string ) {
+
+			const uses = this.share_uses( name )
+			if( !uses.length ) return 'на него никто не ссылается'
+
+			return `узлов ${ uses.length }: ${ this.base_few( uses ) }`
+		}
+
+		override node_share_value( name: string, next?: $mol_tree2 ) {
+
+			const blank = this.node().tree().data( '' )
+			const held = this.node().prop_decl( name )?.kids[ 0 ] ?? blank
+
+			if( next === undefined ) return held
+			if( !this.node_editable() ) return held
+
+			const draft = this.doc_draft()
+			const node = draft.node( this.doc_root() )
+
+			node.prop_tree( name, node.tree().struct( name, [ next ] ) )
+
+			this.node().tree( node.tree() )
+
+			return next
+		}
+
 		share_names() {
 			return this.node().share_names()
 		}
@@ -2296,7 +2326,6 @@ namespace $.$$ {
 
 			const part = this.selected()
 			if( !part || this.inner() || !this.node_editable() ) return false
-			if( this.share_ref( path ) ) return false
 
 			return this.$.$bog_vmap_lang_plain( this.share_at( part, path ) )
 		}

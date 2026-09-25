@@ -36,12 +36,6 @@ namespace $.$$ {
 			this.class_title( draft )
 		}
 
-		override body() {
-
-			if( !this.class_ready() ) return [ this.Empty() ] as readonly $mol_view[]
-
-			return super.body()
-		}
 
 		override tools() {
 			return [
@@ -154,7 +148,24 @@ namespace $.$$ {
 		}
 
 		binds() {
-			return this.port_list()
+			return [ ... this.port_list(), ... this.shares() ]
+		}
+
+		share_row_name( name: string ) {
+			return name
+		}
+
+		share_rows() {
+			return this.shares().map( name => this.Share_row( name ) )
+		}
+
+		override body() {
+
+			if( !this.class_ready() ) return [ this.Empty() ] as readonly $mol_view[]
+
+			return super.body().filter(
+				view => view !== this.Shares() || this.shares().length > 0
+			) as readonly $mol_view[]
 		}
 
 		@ $mol_mem
