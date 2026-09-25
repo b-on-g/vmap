@@ -1921,6 +1921,54 @@ namespace $ {
 
 		},
 
+		'a picked part shows its sources on the right and only the wired inputs on the left'( $ ) {
+
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Map' ])
+
+			const bare = pane.wire_dots().filter( dot => dot.node === 'Map' )
+
+			$mol_assert_equal( bare.length, pane.part_dots( 'Map' ).length )
+			$mol_assert_equal( bare.every( dot => dot.side === 'out' ), true )
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom', bidi: false })
+
+			const wired = pane.wire_dots().filter( dot => dot.node === 'Map' )
+			const inputs = wired.filter( dot => dot.side === 'in' )
+
+			$mol_assert_equal( wired.length, pane.part_dots( 'Map' ).length + 1 )
+			$mol_assert_like( inputs.map( dot => dot.port.name ), [ 'zoom' ] )
+			$mol_assert_equal( inputs[ 0 ].linked, true )
+
+		},
+
+		'a wired input keeps its dot, and a press on it takes the wire off'( $ ) {
+
+			const { pane, node } = wired_make( $ )
+
+			pane.sizes({ [ `${root}/Calc` ]: box( 0, 0 ), [ `${root}/Map` ]: box( 300, 0 ) })
+			pane.picked([ 'Map' ])
+
+			node.link_add({ from: 'Calc', from_prop: 'result', to: 'Map', to_prop: 'zoom', bidi: false })
+
+			$mol_assert_equal( node.links().length, 1 )
+
+			const dot = pane.wire_dots().find( dot => dot.side === 'in' && dot.port.name === 'zoom' )!
+
+			$mol_assert_equal( Boolean( dot ), true )
+
+			pane.node_press( pointer( dot.x, dot.y ) )
+
+			$mol_assert_equal( node.links().length, 0 )
+			$mol_assert_like(
+				[ pane.wire_drag()?.from, pane.wire_drag()?.from_prop ],
+				[ 'Calc', 'result' ],
+			)
+
+		},
+
 		'a drag let go over nothing, or over an input of the wrong shape, writes nothing'( $ ) {
 			const { pane, node } = wired_make( $ )
 
@@ -3825,7 +3873,8 @@ namespace $ {
 			$mol_assert_equal( pane.hovered(), 'Map' )
 
 			const dots = dots_of( pane, 'Map' )
-			$mol_assert_equal( dots.length, 4 )
+			$mol_assert_equal( dots.length, 2 )
+			$mol_assert_equal( dots.every( dot => dot.side === 'out' ), true )
 			$mol_assert_equal( dots.every( dot => Boolean( dot.port.name ) ), true )
 
 			$mol_assert_like(
@@ -3841,13 +3890,13 @@ namespace $ {
 			pane.picked([ 'Calc' ])
 			pane.node_move( pointer( 350, 25 ) )
 
-			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 4 )
-			$mol_assert_equal( dots_of( pane, 'Map' ).length, 4 )
+			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 2 )
+			$mol_assert_equal( dots_of( pane, 'Map' ).length, 2 )
 
 			pane.node_move( pointer( 700, 400 ) )
 
 			$mol_assert_equal( pane.hovered(), null )
-			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 4 )
+			$mol_assert_equal( dots_of( pane, 'Calc' ).length, 2 )
 			$mol_assert_equal( dots_of( pane, 'Map' ).length, 0 )
 
 		},
@@ -3873,7 +3922,7 @@ namespace $ {
 
 			const picked = dots_of( pane, 'Calc' )
 
-			$mol_assert_equal( picked.length, 4 )
+			$mol_assert_equal( picked.length, 2 )
 			$mol_assert_like(
 				[ ... new Set( picked.map( dot => dot.port.name ) ) ].sort(),
 				[ 'op', 'result' ],

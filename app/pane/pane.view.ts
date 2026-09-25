@@ -2663,6 +2663,7 @@ namespace $.$$ {
 				node: string,
 				side: $bog_vmap_app_wire_side,
 				lit: ( port: $bog_vmap_app_wire_port )=> boolean,
+				keep: ( port: $bog_vmap_app_wire_port )=> boolean = ()=> true,
 			)=> {
 				const box = this.part_box( node )
 				if( !box ) return
@@ -2681,6 +2682,7 @@ namespace $.$$ {
 					const lift = this.part_lift( node )
 
 					ports.forEach( ( port, index )=> {
+						if( !keep( port ) ) return
 						const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index, lift )
 						mark( port, x, y )
 					} )
@@ -2688,8 +2690,9 @@ namespace $.$$ {
 					return
 				}
 
-				const index = Math.max( 0, ports.findIndex( lit ) )
-				const port = ports[ index ]
+				const aimed = ports.findIndex( port => keep( port ) && lit( port ) )
+				const index = aimed < 0 ? ports.findIndex( keep ) : aimed
+				const port = index < 0 ? null : ports[ index ]
 				if( !port ) return
 
 				const [ x, y ] = $bog_vmap_app_wire_port_point( box, side, index )
@@ -2710,7 +2713,7 @@ namespace $.$$ {
 			const shown = [ this.primary(), this.hovered() ].filter( Boolean ) as readonly string[]
 
 			for( const name of new Set( shown ) ) {
-				add( name, 'in', ()=> true )
+				add( name, 'in', ()=> true, port => linked.has( `${ name }.${ port.name }` ) )
 				add( name, 'out', ()=> true )
 			}
 
