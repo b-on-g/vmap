@@ -736,8 +736,61 @@ namespace $.$$ {
 			return [
 				... this.left_showed() ? [ this.Left() ] : [],
 				this.Canvas(),
-				... this.right_showed() ? [ this.Right() ] : [],
+				... this.right_showed() ? [ this.Right_grip(), this.Right() ] : [],
 			] as readonly $mol_view[]
+		}
+
+		right_width_min() {
+			return 240
+		}
+
+		right_width_max() {
+			return 720
+		}
+
+		override right_width( next?: number ) {
+
+			const kept = this.$.$mol_state_session.value< number >( 'vmap_right_width', next )
+			if( kept === null || kept === undefined ) return super.right_width()
+
+			return Math.max( this.right_width_min(), Math.min( this.right_width_max(), kept ) )
+		}
+
+		grip_held = null as { readonly x: number, readonly width: number } | null
+
+		grip_from( next?: { readonly x: number, readonly width: number } | null ) {
+			if( next !== undefined ) this.grip_held = next
+			return this.grip_held
+		}
+
+		@ $mol_action
+		override grip_press( event?: PointerEvent | null ) {
+
+			if( !event ) return null
+
+			event.preventDefault()
+			this.grip_from({ x: event.clientX, width: this.right_width() })
+
+			return null
+		}
+
+		grip_move( event: PointerEvent ) {
+
+			const from = this.grip_from()
+			if( !from ) return
+
+			this.right_width( from.width + from.x - event.clientX )
+
+		}
+
+		grip_release() {
+			this.grip_from( null )
+		}
+
+		@ $mol_action
+		override grip_reset( event?: Event | null ) {
+			this.right_width( super.right_width() )
+			return null
 		}
 
 		override left_panel() {
@@ -1436,6 +1489,9 @@ namespace $.$$ {
 
 		drag_move( event?: PointerEvent ) {
 			if( !event ) return
+
+			if( this.grip_from() ) this.grip_move( event )
+
 			if( !this.dragged() ) return
 
 			this.Shelf().drag_x( event.clientX )
@@ -1445,6 +1501,9 @@ namespace $.$$ {
 
 		drag_end( event?: PointerEvent ) {
 			if( !event ) return
+
+			if( this.grip_from() ) this.grip_release()
+
 			if( !this.dragged() ) return
 
 			this.Shelf().dragged( '' )

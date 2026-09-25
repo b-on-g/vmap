@@ -1516,10 +1516,11 @@ namespace $ {
 
 			const main = app.main()
 
-			$mol_assert_equal( main.length, 3 )
+			$mol_assert_equal( main.length, 4 )
 			$mol_assert_equal( main[ 0 ], app.Left() )
 			$mol_assert_equal( main[ 1 ], app.Canvas() )
-			$mol_assert_equal( main[ 2 ], app.Right() )
+			$mol_assert_equal( main[ 2 ], app.Right_grip() )
+			$mol_assert_equal( main[ 3 ], app.Right() )
 
 			const left = app.Left().sub()
 

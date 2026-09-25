@@ -28,12 +28,24 @@ namespace $.$$ {
 		},
 
 		Right: {
-			width: '17rem',
+			minWidth: 0,
 			maxWidth: '100%',
 			display: 'grid',
 			gridTemplateRows: 'auto minmax(0, 1fr)',
 			gridTemplateColumns: 'minmax(0, 1fr)',
 			background: { color: $mol_theme.card },
+		},
+
+		Right_grip: {
+			flex: { grow: 0, shrink: 0, basis: '.5rem' },
+			margin: { right: '-.5rem' },
+			position: 'relative',
+			zIndex: 4,
+			cursor: 'col-resize',
+			touchAction: 'none',
+			':hover': {
+				background: { color: $mol_theme.line },
+			},
 		},
 
 		Canvas: {
@@ -98,6 +110,10 @@ namespace $.$$ {
 					top: 0,
 					bottom: 0,
 					right: 0,
+				},
+
+				Right_grip: {
+					display: 'none',
 				},
 
 			},

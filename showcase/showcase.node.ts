@@ -478,8 +478,8 @@ namespace $ {
 
 			}
 
-			await hand.click( `[ ... document.querySelectorAll( '[bog_vmap_app_left_tabs_option]' ) ].find( node => node.textContent.includes( 'Ассеты' ) )`, 'вкладка «Ассеты»' )
-			await until( `${ app }.left_tab() === 'assets'`, 5000, 'вкладка «Ассеты» не открылась' )
+			await hand.click( `[ ... document.querySelectorAll( '[bog_vmap_app_left_tabs_option]' ) ].find( node => node.textContent.includes( 'Детали' ) )`, 'вкладка «Детали»' )
+			await until( `${ app }.left_tab() === 'assets'`, 5000, 'вкладка «Детали» не открылась' )
 
 			let gestured = 0
 

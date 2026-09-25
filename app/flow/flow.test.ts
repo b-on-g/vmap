@@ -87,13 +87,13 @@ namespace $ {
 
 		const done = $mol_test_complete
 
-		$.$mol_test_complete = function( ... args: unknown[] ) {
+		$.$mol_test_complete = ()=> {
 			$bog_vmap_app_flow_last?.destructor()
 			$bog_vmap_app_flow_last = null
 			$bog_vmap_app_flow_host?.remove()
 			$bog_vmap_app_flow_host = null
-			return ( done as ( ... args: unknown[] )=> unknown ).apply( this, args )
-		} as typeof $mol_test_complete
+			return done()
+		}
 
 		return true
 
@@ -442,7 +442,7 @@ namespace $ {
 			},
 
 			assets() {
-				this.click( this.check( 'Ассеты' ) )
+				this.click( this.check( 'Детали' ) )
 			},
 
 			classes_open() {
@@ -592,7 +592,7 @@ namespace $ {
 			$mol_assert_equal( canvas.querySelector( '[role=button]' ), null )
 
 			const text = stage.text()
-			$mol_assert_ok( text.includes( 'Ассеты' ) )
+			$mol_assert_ok( text.includes( 'Детали' ) )
 			$mol_assert_ok( text.includes( 'Свойства' ) )
 			$mol_assert_ok( text.includes( '100%' ) )
 			$mol_assert_ok( text.includes( 'Выберите узел на холсте' ) )
@@ -1553,7 +1553,7 @@ namespace $ {
 				kids.forEach( ( kid, index )=> $mol_assert_ok( nodes[ index ] === kid.dom_node() ) )
 			}
 
-			holds( app.Main(), [ app.Left(), app.Canvas(), app.Right() ] )
+			holds( app.Main(), [ app.Left(), app.Canvas(), app.Right_grip(), app.Right() ] )
 			holds( app.Left(), [ app.Scenes(), app.Left_tabs(), app.Layers() ] )
 			holds( app.Right(), [ app.Right_tabs(), app.Idle() ] )
 
@@ -1612,7 +1612,7 @@ namespace $ {
 			$mol_assert_equal( showed( app.Code() ), false )
 			$mol_assert_equal( showed( app.History() ), false )
 
-			stage.click( stage.check( 'Ассеты' ) )
+			stage.click( stage.check( 'Детали' ) )
 
 			$mol_assert_ok( showed( app.Shelf() ) )
 			$mol_assert_equal( showed( app.Layers() ), false )
@@ -1703,7 +1703,7 @@ namespace $ {
 
 			const count = ()=> app.Main().dom_node().childElementCount
 
-			$mol_assert_equal( count(), 3 )
+			$mol_assert_equal( count(), 4 )
 
 			stroke( dom.document )
 
@@ -1716,7 +1716,7 @@ namespace $ {
 
 			stroke( dom.document )
 
-			$mol_assert_equal( count(), 3 )
+			$mol_assert_equal( count(), 4 )
 			$mol_assert_ok( stage.root.contains( app.Layers().dom_node() ) )
 
 		},
@@ -3377,6 +3377,81 @@ namespace $ {
 
 			$mol_assert_ok( seq_of( stage, 'sub' ).dom_node().textContent!.includes( 'палитре' ) )
 			$mol_assert_equal( seq_of( stage, 'style' ).dom_node().textContent!.includes( 'палитре' ), false )
+
+		},
+
+	})
+
+}
+
+namespace $ {
+
+	type stage = ReturnType< typeof $bog_vmap_app_flow_stage >
+
+	const grip = ( stage: stage )=> stage.app.Right_grip().dom_node()
+
+	const width_of = ( stage: stage )=> {
+		return Number( ( stage.app.Right().style() as { width?: unknown } ).width?.toString().replace( 'px', '' ) )
+	}
+
+	$mol_test({
+
+		'the grip drags the right panel wider and the panel wears that width'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			const was = app.right_width()
+
+			$mol_assert_equal( width_of( stage ), was )
+
+			stage.press( grip( stage ), [ 1000, 400 ] )
+			stage.move( grip( stage ), [ 900, 400 ] )
+			stage.release( grip( stage ), [ 900, 400 ] )
+			stage.redraw()
+
+			$mol_assert_equal( app.right_width(), was + 100 )
+			$mol_assert_equal( width_of( stage ), was + 100 )
+
+		},
+
+		'the dragged width is clamped and a double click brings the usual one back'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+			const dom = $.$mol_dom_context
+
+			const usual = app.right_width()
+
+			stage.press( grip( stage ), [ 1000, 400 ] )
+			stage.move( grip( stage ), [ -9000, 400 ] )
+			stage.release( grip( stage ), [ -9000, 400 ] )
+			stage.redraw()
+
+			$mol_assert_equal( app.right_width(), app.right_width_max() )
+
+			stage.press( grip( stage ), [ 1000, 400 ] )
+			stage.move( grip( stage ), [ 9000, 400 ] )
+			stage.release( grip( stage ), [ 9000, 400 ] )
+			stage.redraw()
+
+			$mol_assert_equal( app.right_width(), app.right_width_min() )
+
+			grip( stage ).dispatchEvent( new dom.MouseEvent( 'dblclick', { bubbles: true } ) )
+			stage.redraw()
+
+			$mol_assert_equal( app.right_width(), usual )
+
+		},
+
+		'a pointer move without a press never moves the panel'( $ ) {
+			const stage = $bog_vmap_app_flow_stage( $ )
+			const app = stage.app
+
+			const was = app.right_width()
+
+			stage.move( grip( stage ), [ 100, 400 ] )
+			stage.redraw()
+
+			$mol_assert_equal( app.right_width(), was )
 
 		},
 

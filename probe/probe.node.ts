@@ -24,6 +24,8 @@ namespace $ {
 
 	export const $bog_vmap_probe_columns = [ 'left', 'canvas', 'right' ]
 
+	export const $bog_vmap_probe_seam = 'right_grip'
+
 	export const $bog_vmap_probe_left = [ 'scenes', 'left_tabs', 'layers', 'shelf' ]
 
 	export type $bog_vmap_probe_mode = 'plain' | 'open' | 'long' | 'assets'
@@ -31,7 +33,7 @@ namespace $ {
 	export const $bog_vmap_probe_passes: readonly { readonly width: number, readonly mode: $bog_vmap_probe_mode, readonly note: string }[] = [
 		{ width: 1280, mode: 'plain', note: '' },
 		{ width: 1280, mode: 'long', note: ' с длинным списком сцен' },
-		{ width: 1280, mode: 'assets', note: ' на вкладке «Ассеты»' },
+		{ width: 1280, mode: 'assets', note: ' на вкладке «Детали»' },
 		{ width: 400, mode: 'plain', note: '' },
 		{ width: 400, mode: 'open', note: ' с открытыми колонками' },
 	]
@@ -124,7 +126,7 @@ namespace $ {
 			}
 			const main = document.querySelector( '[bog_vmap_app_main]' )
 			const order = main ? [ ... main.children ].map(
-				kid => ${ JSON.stringify( $bog_vmap_probe_columns ) }.find( name => kid.hasAttribute( 'bog_vmap_app_' + name ) ) || '?'
+				kid => ${ JSON.stringify( $bog_vmap_probe_columns.concat( $bog_vmap_probe_seam ) ) }.find( name => kid.hasAttribute( 'bog_vmap_app_' + name ) ) || '?'
 			) : []
 			const left = document.querySelector( '[bog_vmap_app_left]' )
 			const stack = left ? [ ... left.children ].map(
@@ -1101,6 +1103,150 @@ namespace $ {
 
 	}
 
+	export const $bog_vmap_probe_key_min = 56
+
+	export async function $bog_vmap_probe_panel(
+		root: string,
+		say: ( line: string )=> void,
+		want: ( ok: boolean, note: string )=> void,
+	) {
+
+		const d = '$'
+		const app = `$[ ${ JSON.stringify( d + 'bog_vmap_app' ) } ].Root( 0 )`
+		const at = '1280, правая панель:'
+
+		const must = ( ok: boolean, note: string )=> { if( !ok ) $mol_fail( new Error( note ) ) }
+
+		await $bog_vmap_probe_drive( root, at, async ( browser, { mouse } )=> {
+
+			const drawn = String( await browser.evaluate( `
+				const app = ${ app }
+				await $.$mol_wire_async( ()=> app.board_draw({ x: 40, y: 40, width: 400, height: 300 }) )()
+				await $.$mol_wire_async( ()=> app.node().part_names() )()
+				return app.selected() ?? ''
+			`, 60000 ) )
+
+			must( Boolean( drawn ), `${ at } артборд не завёлся, выделено «${ drawn }»` )
+
+			if( await browser.until( `${ app }.right_tab() === 'design'`, 15000 ) < 0 ) {
+				return $mol_fail( new Error( `${ at } вкладка «Дизайн» не открылась` ) )
+			}
+
+			const shape = async ()=> await browser.evaluate( `
+				const panel = document.querySelector( '[bog_vmap_app_right]' )
+				const box = panel.getBoundingClientRect()
+
+				const rows = [ ... document.querySelectorAll( '[bog_vmap_app_inspect_value_item]' ) ]
+
+				const keys = []
+				const spill = []
+
+				for( const row of rows ) {
+					const key = row.querySelector( 'input' )
+					if( key ) keys.push( Math.round( key.getBoundingClientRect().width ) )
+					for( const el of row.querySelectorAll( '*' ) ) {
+						const one = el.getBoundingClientRect()
+						if( one.width && one.right > box.right + 1 ) spill.push( Math.round( one.right - box.right ) )
+					}
+				}
+
+				return {
+					width: Math.round( box.width ),
+					cut: panel.scrollWidth - panel.clientWidth,
+					rows: rows.length,
+					keys,
+					spill,
+				}
+			`, 30000 ) as { width: number, cut: number, rows: number, keys: number[], spill: number[] }
+
+			const paint = async ()=> await browser.evaluate( `
+				const app = ${ app }
+				const inspect = app.Inspect()
+				const rows = inspect.rows()
+
+				inspect.Rows().force_render( new Set( rows ) )
+				app.dom_tree()
+
+				for( const row of rows ) {
+					try {
+						const seq = row.Value().Seq()
+						seq.Items().force_render( new Set( seq.items() ) )
+					} catch( error ) {}
+				}
+
+				app.dom_tree()
+
+				return rows.length
+			`, 30000 )
+
+			const settled = async ()=> {
+
+				const began = Date.now()
+
+				let last = -1
+
+				for( ;; ) {
+					await paint()
+					const got = await shape()
+					if( got.rows > 0 && got.rows === last ) return got
+					if( Date.now() - began > 30000 ) return got
+					last = got.rows
+					await $bog_probe_pause( 200 )
+				}
+
+			}
+
+			const before = await settled()
+
+			if( !before.rows ) {
+
+				const why = await browser.evaluate( `
+					const app = ${ app }
+					return {
+						выделено: app.selected() ?? '',
+						вкладка: app.right_tab(),
+						строк: document.querySelectorAll( '[bog_vmap_app_inspect_row]' ).length,
+						записей: document.querySelectorAll( '[bog_vmap_app_inspect_value_item]' ).length,
+					}
+				`, 15000 )
+
+				must( false, `${ at } в «Дизайне» нет ни одной записи словаря за 30 с: ${ JSON.stringify( why ) }` )
+			}
+			want( before.spill.length === 0, `${ at } из панели торчит ${ before.spill.length } узлов, дальше края на ${ before.spill.join( ', ' ) } px` )
+
+			const narrow = before.keys.filter( one => one < $bog_vmap_probe_key_min )
+			want( narrow.length === 0, `${ at } поля имён ужаты: ${ narrow.join( ', ' ) } px при пороге ${ $bog_vmap_probe_key_min }` )
+
+			const grip = await browser.evaluate( `
+				const box = document.querySelector( '[bog_vmap_app_right_grip]' ).getBoundingClientRect()
+				return [ box.left + box.width / 2, box.top + box.height / 2 ]
+			`, 15000 ) as [ number, number ]
+
+			await mouse( 'mouseMoved', grip )
+			await mouse( 'mousePressed', grip )
+			await mouse( 'mouseMoved', [ grip[ 0 ] - 60, grip[ 1 ] ], true )
+			await mouse( 'mouseMoved', [ grip[ 0 ] - 120, grip[ 1 ] ], true )
+			await mouse( 'mouseReleased', [ grip[ 0 ] - 120, grip[ 1 ] ] )
+
+			if( await browser.until(
+				`Math.round( document.querySelector( '[bog_vmap_app_right]' ).getBoundingClientRect().width ) === ${ app }.right_width()`,
+				5000,
+			) < 0 ) {
+				return $mol_fail( new Error( `${ at } панель не догнала свою ширину за 5 с` ) )
+			}
+
+			const after = await shape()
+
+			want( after.width > before.width, `${ at } тяга за ручку не расширила панель: было ${ before.width }, стало ${ after.width }` )
+
+			say( `${ at } ширина ${ before.width } → ${ after.width } px за тягу ручки;`
+				+ ` измерено записей словаря ${ before.rows }, самое узкое поле имени ${ Math.min( ... before.keys ) } px при пороге ${ $bog_vmap_probe_key_min };`
+				+ ` за край панели не торчит ничего, обрезано ${ before.cut } px` )
+
+		} )
+
+	}
+
 	export function $bog_vmap_probe_show( rect: $bog_probe_rect | null ) {
 		if( !rect ) return 'null'
 		return `${ Math.round( rect.width ) }×${ Math.round( rect.height ) } @${ Math.round( rect.left ) },${ Math.round( rect.top ) }`
@@ -1199,7 +1345,7 @@ namespace $ {
 		want: ( ok: boolean, note: string )=> void,
 	) {
 
-		const at = '1280, «Ассеты», клик мышью:'
+		const at = '1280, «Детали», клик мышью:'
 
 		const trigger = ( name: string )=> `document.querySelector( '[bog_vmap_app_shelf_${ name }_trigger]' )`
 		const content = ( name: string )=> `!!document.querySelector( '[bog_vmap_app_shelf_${ name }_content]' )`
@@ -1209,9 +1355,9 @@ namespace $ {
 
 			const painted = async ( name: string )=> String( await browser.evaluate( `return ${ paint( name ) }`, 15000 ) )
 
-			await tab( 'Ассеты' )
+			await tab( 'Детали' )
 			if( await browser.until( `!!document.querySelector( '[bog_vmap_app_shelf]' )`, 15000 ) < 0 ) {
-				return $mol_fail( new Error( `${ at } вкладка «Ассеты» не открыла Полку` ) )
+				return $mol_fail( new Error( `${ at } вкладка «Детали» не открыла Полку` ) )
 			}
 
 			await away()
@@ -1280,7 +1426,7 @@ namespace $ {
 			facts.push( `после Shift клик по «Руке» оставил фокус ${ clicked }, Enter — инструмент ${ kept }` )
 
 			await browser.press( 'v', 86 )
-			await tab( 'Ассеты' )
+			await tab( 'Детали' )
 
 			const trigger = `document.querySelector( '[bog_vmap_app_shelf_source_trigger]' )`
 			const shade = `getComputedStyle( ${ trigger } ).boxShadow`
@@ -1560,6 +1706,7 @@ namespace $ {
 		await $bog_vmap_probe_early( root, say, want )
 		await $bog_vmap_probe_foreign( root, say, want )
 		await $bog_vmap_probe_reload( root, say, want )
+		await $bog_vmap_probe_panel( root, say, want )
 
 		let widths = [ -1, -1 ]
 
@@ -1636,7 +1783,9 @@ namespace $ {
 				`${ at } строка колонок не во всю ширину: ${ $bog_vmap_probe_show( main ) }`,
 			)
 
-			const columns = width === 400 && !open ? [ 'canvas' ] : $bog_vmap_probe_columns
+			const columns = width === 400 && !open
+				? [ 'canvas' ]
+				: [ 'left', 'canvas', $bog_vmap_probe_seam, 'right' ]
 
 			want(
 				got.order.join() === columns.join(),
